@@ -39,7 +39,7 @@ func setLogLevel() {
 	log.SetFormatter(customFormatter)
 	log.SetReportCaller(true)
 	customFormatter.FullTimestamp = true
-	fmt.Println("logLevel =", logLevel)
+	fmt.Println(`logLevel = "` + logLevel + `"`)
 	switch logLevel {
 	case "trace":
 		log.SetLevel(logrus.TraceLevel)
@@ -71,8 +71,8 @@ repositories.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			setLogLevel()
 
-			fmt.Println("config =", cfgFile)
-			fmt.Println("exampleParameter =", exampleParameter)
+			fmt.Println(`config = "` + cfgFile + `"`)
+			fmt.Println(`exampleParameter = "` + exampleParameter + `"`)
 		},
 	}
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "",
@@ -105,7 +105,7 @@ func initConfig() {
 		home, err := os.UserHomeDir()
 		cobra.CheckErr(err)
 
-		// Search config in home directory with name ".git-synchronizer" (without extension).
+		// Search for config in home directory.
 		viper.AddConfigPath(home)
 		viper.SetConfigType("yaml")
 		viper.SetConfigName(".git-synchronizer")

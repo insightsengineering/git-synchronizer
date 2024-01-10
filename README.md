@@ -16,7 +16,7 @@ git-synchronizer --help
 
 ## Configuration file
 
-If you'd like to set the above options in a configuration file, by default `git-synchronizer` checks `~/.git-synchronizer`, `~/.git-synchronizer.yaml` and `~/.git-synchronizer.yml` files.
+If you'd like to set the options in a configuration file, by default `git-synchronizer` checks `~/.git-synchronizer`, `~/.git-synchronizer.yaml` and `~/.git-synchronizer.yml` files.
 If any of these files exist, `git-synchronizer` uses options defined there, unless they are overridden by command line flags.
 
 You can also specify custom path to configuration file with `--config <your-configuration-file>.yml` command line flag.
@@ -38,6 +38,8 @@ For example, setting the following variables will override the respective values
 The order of precedence is:
 
 CLI flag → environment variable → configuration file → default value.
+
+To check the available names of environment variables, please run `git-synchronizer --help`.
 
 ## Development
 
