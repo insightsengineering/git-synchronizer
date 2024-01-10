@@ -19,3 +19,10 @@
 
 # Go workspace file
 go.work
+
+dist/
+
+coverage.html
+coverage.xml
+junit-report.xml
+test-results.txt
