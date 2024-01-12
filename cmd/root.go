@@ -18,6 +18,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"runtime"
 
 	"github.com/jamiealquiza/envy"
 	"github.com/sirupsen/logrus"
@@ -28,7 +29,15 @@ import (
 
 var cfgFile string
 var logLevel string
-var exampleParameter string
+
+// Repository list provided in YAML configuration file.
+var inputRepositories []string
+
+// Repository list provided as string of comma-separated values via
+// CLI flag or environment variable.
+var inputRepositoryList string
+
+var localTempDirectory string
 
 var log = logrus.New()
 
@@ -37,8 +46,8 @@ func setLogLevel() {
 	customFormatter.TimestampFormat = "2006-01-02 15:04:05"
 	customFormatter.ForceColors = true
 	log.SetFormatter(customFormatter)
-	log.SetReportCaller(true)
-	customFormatter.FullTimestamp = true
+	log.SetReportCaller(false)
+	customFormatter.FullTimestamp = false
 	fmt.Println(`logLevel = "` + logLevel + `"`)
 	switch logLevel {
 	case "trace":
@@ -62,9 +71,7 @@ func newRootCommand() {
 	rootCmd = &cobra.Command{
 		Use:   "git-synchronizer",
 		Short: "A tool to synchronize git repositories.",
-		Long: `A tool to synchronize
-git
-repositories.`,
+		Long:  `A tool to synchronize git repositories.`,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			initializeConfig()
 		},
@@ -72,15 +79,26 @@ repositories.`,
 			setLogLevel()
 
 			fmt.Println(`config = "` + cfgFile + `"`)
-			fmt.Println(`exampleParameter = "` + exampleParameter + `"`)
+			fmt.Println(`inputRepositoryList = "` + inputRepositoryList + `"`)
+			fmt.Println("inputRepositories =", inputRepositories)
+
+			if runtime.GOOS == "windows" {
+				localTempDirectory = os.Getenv("TMP") + `\tmp\git-synchronizer`
+			} else {
+				localTempDirectory = "/tmp/git-synchronizer"
+			}
+
+			err := os.MkdirAll(localTempDirectory, os.ModePerm)
+			checkError(err)
+			MirrorRepository("https://github.com/insightsengineering/tern", "https://code.roche.com/", "GITSYNCHRONIZER_GITHUBTOKEN", "")
 		},
 	}
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "",
+	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "",
 		"config file (default is $HOME/.git-synchronizer.yaml)")
-	rootCmd.PersistentFlags().StringVar(&logLevel, "logLevel", "info",
+	rootCmd.PersistentFlags().StringVarP(&logLevel, "logLevel", "l", "info",
 		"Logging level (trace, debug, info, warn, error). ")
-	rootCmd.PersistentFlags().StringVar(&exampleParameter, "exampleParameter", "",
-		"Example parameter that does nothing.")
+	rootCmd.PersistentFlags().StringVarP(&inputRepositoryList, "inputRepositoryList", "r", "",
+		"Comma-separated list of git repository URLs.")
 
 	// Add version command.
 	rootCmd.AddCommand(extension.NewVersionCobraCmd())
@@ -130,7 +148,7 @@ func Execute() {
 
 func initializeConfig() {
 	for _, v := range []string{
-		"logLevel", "exampleParameter",
+		"logLevel", "inputRepositoryList",
 	} {
 		// If the flag has not been set in newRootCommand() and it has been set in initConfig().
 		// In other words: if it's not been provided in command line, but has been
@@ -142,4 +160,7 @@ func initializeConfig() {
 			checkError(err)
 		}
 	}
+
+	// Check if a YAML list of input git repositories has been provided in the configuration file.
+	inputRepositories = viper.GetStringSlice("inputRepositories")
 }
