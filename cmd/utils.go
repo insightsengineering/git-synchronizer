@@ -15,8 +15,21 @@ limitations under the License.
 */
 package cmd
 
+import (
+	git "github.com/go-git/go-git/v5"
+)
+
 func checkError(err error) {
-	if err != nil {
+	if err != nil && err != git.NoErrAlreadyUpToDate {
 		log.Error(err)
 	}
+}
+
+func stringInSlice(a string, list []string) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
+	}
+	return false
 }

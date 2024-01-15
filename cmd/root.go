@@ -90,7 +90,12 @@ func newRootCommand() {
 
 			err := os.MkdirAll(localTempDirectory, os.ModePerm)
 			checkError(err)
-			MirrorRepository("https://github.com/insightsengineering/tern", "https://code.roche.com/", "GITSYNCHRONIZER_GITHUBTOKEN", "")
+			MirrorRepository(
+				"https://github.com/insightsengineering/tern",
+				"https://code.roche.com/walkowif/test-project-1",
+				"GITSYNCHRONIZER_GITHUBTOKEN",
+				"GITSYNCHRONIZER_GITLABTOKEN",
+			)
 		},
 	}
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "",
