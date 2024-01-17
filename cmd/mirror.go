@@ -18,6 +18,8 @@ package cmd
 import (
 	"os"
 	"strings"
+	"time"
+	"encoding/json"
 
 	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
@@ -27,6 +29,33 @@ import (
 const refBranchPrefix = "refs/heads/"
 const refTagPrefix = "refs/tags/"
 const basicAuthUsername = "This can be any string."
+
+type MirrorStatus struct {
+	Errors        []string
+	LastCloneEnd  time.Time
+	CloneDuration time.Duration
+	PushDuration  time.Duration
+}
+
+func SetRepositoryAuth(repositories *[]RepositoryPair, defaultSettings RepositoryPair) {
+	for i := 0; i < len(*repositories); i++ {
+		if (*repositories)[i].Source.Auth.Method == "" {
+			(*repositories)[i].Source.Auth.Method = defaultSettings.Source.Auth.Method
+			if (*repositories)[i].Source.Auth.Method == "token" {
+				(*repositories)[i].Source.Auth.TokenName = defaultSettings.Source.Auth.TokenName
+			}
+		}
+		if (*repositories)[i].Destination.Auth.Method == "" {
+			(*repositories)[i].Destination.Auth.Method = defaultSettings.Destination.Auth.Method
+			if (*repositories)[i].Destination.Auth.Method == "token" {
+				(*repositories)[i].Destination.Auth.TokenName = defaultSettings.Destination.Auth.TokenName
+			}
+		}
+	}
+	repositoriesJSON, err := json.MarshalIndent(*repositories, "", "  ")
+	checkError(err)
+	log.Debug("repositories = ", string(repositoriesJSON))
+}
 
 func GetBranchesAndTagsFromRemote(repository *git.Repository, remoteName string, listOptions *git.ListOptions) ([]string, []string) {
 	remote, err := repository.Remote(remoteName)
@@ -58,18 +87,48 @@ func ProcessPushingError(err error, url string, activity string, allErrors *[]st
 	}
 }
 
-func MirrorRepository(source, destination, sourcePatEnvVar, destinationPatEnvVar string) {
+func getCloneOptions(source string, sourceAuth Authentication) *git.CloneOptions {
+	var sourcePat string
+	if sourceAuth.Method == "token" {
+		sourcePat = os.Getenv(sourceAuth.TokenName)
+	} else if sourceAuth.Method != "" {
+		log.Error("Unknown auth method: ", sourceAuth.Method)
+	}
+	if sourcePat != "" {
+		gitCloneOptions := &git.CloneOptions{
+			URL: source,
+			Auth: &githttp.BasicAuth{
+				Username: basicAuthUsername,
+				Password: sourcePat,
+			},
+		}
+		return gitCloneOptions
+	}
+	gitCloneOptions := &git.CloneOptions{URL: source}
+	return gitCloneOptions
+}
+
+func getDestinationAuth(destAuth Authentication) *githttp.BasicAuth {
+	var destinationPat string
+	if destAuth.Method == "token" {
+		destinationPat = os.Getenv(destAuth.TokenName)
+	} else if destAuth.Method != "" {
+		log.Error("Unknown auth method: ", destAuth.Method)
+	}
+	destinationAuth := &githttp.BasicAuth{
+		Username: basicAuthUsername,
+		Password: destinationPat,
+	}
+	return destinationAuth
+}
+
+func MirrorRepository(messages chan MirrorStatus, source, destination string, sourceAuthentication, destinationAuthentication Authentication) {
 	log.Debug("Cloning ", source, "...")
+	cloneStart := time.Now()
 	gitDirectory, err := os.MkdirTemp(localTempDirectory, "")
 	checkError(err)
 	defer os.RemoveAll(gitDirectory)
-	sourceAuth := &githttp.BasicAuth{
-		Username: basicAuthUsername,
-		Password: os.Getenv(sourcePatEnvVar)}
-	gitCloneOptions := &git.CloneOptions{
-		URL:  source,
-		Auth: sourceAuth,
-	}
+	gitCloneOptions := getCloneOptions(source, sourceAuthentication)
 	repository, err := git.PlainClone(gitDirectory, false, gitCloneOptions)
 	if err != nil {
 		log.Error("Error while cloning ", source, ": ", err)
@@ -83,8 +142,10 @@ func MirrorRepository(source, destination, sourcePatEnvVar, destinationPatEnvVar
 	checkError(err)
 	sourceRemote.Fetch(&git.FetchOptions{
 		RefSpecs: []config.RefSpec{"refs/heads/*:refs/heads/*"},
-		Auth:     sourceAuth,
 	})
+
+	cloneDuration := time.Since(cloneStart)
+	cloneEnd, pushStart := time.Now(), time.Now()
 
 	_, err = repository.CreateRemote(&config.RemoteConfig{
 		Name: "destination",
@@ -92,9 +153,7 @@ func MirrorRepository(source, destination, sourcePatEnvVar, destinationPatEnvVar
 	})
 	checkError(err)
 
-	destinationAuth := &githttp.BasicAuth{
-		Username: basicAuthUsername,
-		Password: os.Getenv(destinationPatEnvVar)}
+	destinationAuth := getDestinationAuth(destinationAuthentication)
 
 	destinationBranchList, destinationTagList := GetBranchesAndTagsFromRemote(repository, "destination", &git.ListOptions{Auth: destinationAuth})
 	log.Debug(destination, " branches = ", destinationBranchList)
@@ -104,8 +163,8 @@ func MirrorRepository(source, destination, sourcePatEnvVar, destinationPatEnvVar
 
 	log.Info("Pushing all branches from ", source, " to ", destination)
 	for _, branch := range sourceBranchList {
-		log.Debug("Pushing branch ", branch)
-		err := repository.Push(&git.PushOptions{
+		log.Debug("Pushing branch ", branch, " to ", destination)
+		err = repository.Push(&git.PushOptions{
 			RemoteName: "destination",
 			RefSpecs:   []config.RefSpec{config.RefSpec("+" + refBranchPrefix + branch + ":" + refBranchPrefix + branch)},
 			Auth:       destinationAuth, Force: true, Atomic: true})
@@ -116,7 +175,7 @@ func MirrorRepository(source, destination, sourcePatEnvVar, destinationPatEnvVar
 	for _, branch := range destinationBranchList {
 		if !stringInSlice(branch, sourceBranchList) {
 			log.Info("Removing branch ", branch, " from ", destination)
-			err := repository.Push(&git.PushOptions{
+			err = repository.Push(&git.PushOptions{
 				RemoteName: "destination",
 				RefSpecs:   []config.RefSpec{config.RefSpec(":" + refBranchPrefix + branch)},
 				Auth:       destinationAuth, Force: true, Atomic: true})
@@ -124,14 +183,11 @@ func MirrorRepository(source, destination, sourcePatEnvVar, destinationPatEnvVar
 		}
 	}
 	log.Info("Pushing all tags from ", source, " to ", destination)
-	for _, tag := range sourceTagList {
-		log.Debug("Pushing tag ", tag)
-		err := repository.Push(&git.PushOptions{
-			RemoteName: "destination",
-			RefSpecs:   []config.RefSpec{config.RefSpec("+" + refTagPrefix + tag + ":" + refTagPrefix + tag)},
-			Auth:       destinationAuth, Force: true, Atomic: true})
-		ProcessPushingError(err, destination, "pushing tag "+tag+" to ", &allErrors)
-	}
+	err = repository.Push(&git.PushOptions{
+		RemoteName: "destination",
+		RefSpecs:   []config.RefSpec{config.RefSpec("+" + refTagPrefix + "*:" + refTagPrefix + "*")},
+		Auth:       destinationAuth, Force: true, Atomic: true})
+	ProcessPushingError(err, destination, "pushing all tags to ", &allErrors)
 	// Remove any tags not present in the source repository anymore.
 	for _, tag := range destinationTagList {
 		if !stringInSlice(tag, sourceTagList) {
@@ -142,6 +198,52 @@ func MirrorRepository(source, destination, sourcePatEnvVar, destinationPatEnvVar
 				Auth:       destinationAuth, Force: true, Atomic: true})
 			ProcessPushingError(err, destination, "removing tag "+tag+" from ", &allErrors)
 		}
+	}
+	pushDuration := time.Since(pushStart)
+	messages <- MirrorStatus{allErrors, cloneEnd, cloneDuration, pushDuration}
+}
+
+func MirrorRepositories(repos []RepositoryPair) {
+	messages := make(chan MirrorStatus)
+	var allErrors []string
+	synchronizationStart := time.Now()
+	for _, repository := range repos {
+		log.Info("Mirroring ", repository.Source.RepositoryURL, " → ", repository.Destination.RepositoryURL)
+		go MirrorRepository(
+			messages, repository.Source.RepositoryURL, repository.Destination.RepositoryURL,
+			repository.Source.Auth, repository.Destination.Auth,
+		)
+	}
+	receivedResults := 0
+	var lastCloneEnd time.Time
+	var totalCloneDuration time.Duration
+	var totalPushDuration time.Duration
+results_receiver_loop:
+	for {
+		select {
+		case msg := <-messages:
+			receivedResults++
+			log.Info("Finished mirroring ", receivedResults, " out of ", len(repos), " repositories.")
+			combineSlices(msg.Errors, &allErrors)
+			lastCloneEnd = msg.LastCloneEnd
+			totalCloneDuration += msg.CloneDuration
+			totalPushDuration += msg.PushDuration
+			if receivedResults == len(repos) {
+				break results_receiver_loop
+			}
+		default:
+			time.Sleep(time.Second)
+		}
+	}
+	cloneDuration := lastCloneEnd.Sub(synchronizationStart)
+	syncDuration := time.Since(synchronizationStart)
+	log.Infof("Last clone finished %v after synchronization had started (%.1f%% of total synchronization time).",
+		cloneDuration.Round(time.Second), (float64(100)*cloneDuration.Seconds())/syncDuration.Seconds())
+	log.Infof("Synchronization took %v (wall-clock time).", syncDuration.Round(time.Second))
+	log.Infof("Total clone duration: %v (goroutine time).", totalCloneDuration.Round(time.Second))
+	log.Infof("Total push duration: %v (goroutine time).", totalPushDuration.Round(time.Second))
+	if len(allErrors) > 0 {
+		log.Error("The following errors have been encountered:")
 	}
 	for _, e := range allErrors {
 		log.Error(e)

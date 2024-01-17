@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"encoding/json"
 
 	"github.com/jamiealquiza/envy"
 	"github.com/sirupsen/logrus"
@@ -30,12 +31,25 @@ import (
 var cfgFile string
 var logLevel string
 
-// Repository list provided in YAML configuration file.
-var inputRepositories []string
+type RepositoryPair struct {
+	Source      Repository `mapstructure:"source"`
+	Destination Repository `mapstructure:"destination"`
+}
 
-// Repository list provided as string of comma-separated values via
-// CLI flag or environment variable.
-var inputRepositoryList string
+type Repository struct {
+	RepositoryURL string         `mapstructure:"repo"`
+	Auth          Authentication `mapstructure:"auth"`
+}
+
+type Authentication struct {
+	Method    string `mapstructure:"method"`
+	TokenName string `mapstructure:"token_name"`
+}
+
+// Repository list provided in YAML configuration file.
+var inputRepositories []RepositoryPair
+
+var defaultSettings RepositoryPair
 
 var localTempDirectory string
 
@@ -79,8 +93,12 @@ func newRootCommand() {
 			setLogLevel()
 
 			fmt.Println(`config = "` + cfgFile + `"`)
-			fmt.Println(`inputRepositoryList = "` + inputRepositoryList + `"`)
-			fmt.Println("inputRepositories =", inputRepositories)
+			inputRepositoriesJSON, err := json.MarshalIndent(inputRepositories, "", "  ")
+			checkError(err)
+			defaultSettingsJSON, err := json.MarshalIndent(defaultSettings, "", "  ")
+			checkError(err)
+			log.Debug("inputRepositories = ", string(inputRepositoriesJSON))
+			log.Debug("defaultSettings = ", string(defaultSettingsJSON))
 
 			if runtime.GOOS == "windows" {
 				localTempDirectory = os.Getenv("TMP") + `\tmp\git-synchronizer`
@@ -88,22 +106,18 @@ func newRootCommand() {
 				localTempDirectory = "/tmp/git-synchronizer"
 			}
 
-			err := os.MkdirAll(localTempDirectory, os.ModePerm)
+			SetRepositoryAuth(&inputRepositories, defaultSettings)
+
+			err = os.MkdirAll(localTempDirectory, os.ModePerm)
 			checkError(err)
-			MirrorRepository(
-				"https://github.com/insightsengineering/tern",
-				"https://code.roche.com/walkowif/test-project-1",
-				"GITSYNCHRONIZER_GITHUBTOKEN",
-				"GITSYNCHRONIZER_GITLABTOKEN",
-			)
+
+			MirrorRepositories(inputRepositories)
 		},
 	}
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "",
 		"config file (default is $HOME/.git-synchronizer.yaml)")
 	rootCmd.PersistentFlags().StringVarP(&logLevel, "logLevel", "l", "info",
 		"Logging level (trace, debug, info, warn, error). ")
-	rootCmd.PersistentFlags().StringVarP(&inputRepositoryList, "inputRepositoryList", "r", "",
-		"Comma-separated list of git repository URLs.")
 
 	// Add version command.
 	rootCmd.AddCommand(extension.NewVersionCobraCmd())
@@ -153,7 +167,7 @@ func Execute() {
 
 func initializeConfig() {
 	for _, v := range []string{
-		"logLevel", "inputRepositoryList",
+		"logLevel",
 	} {
 		// If the flag has not been set in newRootCommand() and it has been set in initConfig().
 		// In other words: if it's not been provided in command line, but has been
@@ -167,5 +181,9 @@ func initializeConfig() {
 	}
 
 	// Check if a YAML list of input git repositories has been provided in the configuration file.
-	inputRepositories = viper.GetStringSlice("inputRepositories")
+	err := viper.UnmarshalKey("repositories", &inputRepositories)
+	checkError(err)
+	// Read default settings from configuration file.
+	err = viper.UnmarshalKey("defaults", &defaultSettings)
+	checkError(err)
 }
