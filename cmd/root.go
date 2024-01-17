@@ -16,10 +16,10 @@ limitations under the License.
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"runtime"
-	"encoding/json"
 
 	"github.com/jamiealquiza/envy"
 	"github.com/sirupsen/logrus"

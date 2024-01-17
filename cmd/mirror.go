@@ -16,10 +16,10 @@ limitations under the License.
 package cmd
 
 import (
+	"encoding/json"
 	"os"
 	"strings"
 	"time"
-	"encoding/json"
 
 	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
@@ -29,6 +29,7 @@ import (
 const refBranchPrefix = "refs/heads/"
 const refTagPrefix = "refs/tags/"
 const basicAuthUsername = "This can be any string."
+const token = "token"
 
 type MirrorStatus struct {
 	Errors        []string
@@ -41,13 +42,13 @@ func SetRepositoryAuth(repositories *[]RepositoryPair, defaultSettings Repositor
 	for i := 0; i < len(*repositories); i++ {
 		if (*repositories)[i].Source.Auth.Method == "" {
 			(*repositories)[i].Source.Auth.Method = defaultSettings.Source.Auth.Method
-			if (*repositories)[i].Source.Auth.Method == "token" {
+			if (*repositories)[i].Source.Auth.Method == token {
 				(*repositories)[i].Source.Auth.TokenName = defaultSettings.Source.Auth.TokenName
 			}
 		}
 		if (*repositories)[i].Destination.Auth.Method == "" {
 			(*repositories)[i].Destination.Auth.Method = defaultSettings.Destination.Auth.Method
-			if (*repositories)[i].Destination.Auth.Method == "token" {
+			if (*repositories)[i].Destination.Auth.Method == token {
 				(*repositories)[i].Destination.Auth.TokenName = defaultSettings.Destination.Auth.TokenName
 			}
 		}
@@ -111,13 +112,14 @@ func ProcessError(err error, activity string, url string, allErrors *[]string) {
 		e = "Error while " + activity + url + ": " + err.Error()
 	}
 	if e != "" {
+		log.Error(e)
 		*allErrors = append(*allErrors, e)
 	}
 }
 
 func getCloneOptions(source string, sourceAuth Authentication) *git.CloneOptions {
 	var sourcePat string
-	if sourceAuth.Method == "token" {
+	if sourceAuth.Method == token {
 		sourcePat = os.Getenv(sourceAuth.TokenName)
 	} else if sourceAuth.Method != "" {
 		log.Error("Unknown auth method: ", sourceAuth.Method)
@@ -138,7 +140,7 @@ func getCloneOptions(source string, sourceAuth Authentication) *git.CloneOptions
 
 func getDestinationAuth(destAuth Authentication) *githttp.BasicAuth {
 	var destinationPat string
-	if destAuth.Method == "token" {
+	if destAuth.Method == token {
 		destinationPat = os.Getenv(destAuth.TokenName)
 	} else if destAuth.Method != "" {
 		log.Error("Unknown auth method: ", destAuth.Method)
@@ -161,13 +163,13 @@ func MirrorRepository(messages chan MirrorStatus, source, destination string, so
 	repository, err := git.PlainClone(gitDirectory, false, gitCloneOptions)
 	if err != nil {
 		ProcessError(err, "cloning repository from ", source, &allErrors)
-		messages <- MirrorStatus{allErrors, time.Now(), time.Duration(0 * time.Second), time.Duration(0 * time.Second)}
+		messages <- MirrorStatus{allErrors, time.Now(), 0, 0}
 		return
 	}
 	sourceBranchList, sourceTagList, err := GetBranchesAndTagsFromRemote(repository, "origin", &git.ListOptions{})
 	if err != nil {
 		ProcessError(err, "getting branches and tags from ", source, &allErrors)
-		messages <- MirrorStatus{allErrors, time.Now(), time.Duration(0 * time.Second), time.Duration(0 * time.Second)}
+		messages <- MirrorStatus{allErrors, time.Now(), 0, 0}
 		return
 	}
 	log.Debug(source, " branches = ", sourceBranchList)
@@ -177,7 +179,7 @@ func MirrorRepository(messages chan MirrorStatus, source, destination string, so
 	sourceRemote, err := repository.Remote("origin")
 	if err != nil {
 		ProcessError(err, "getting source remote for ", source, &allErrors)
-		messages <- MirrorStatus{allErrors, time.Now(), time.Duration(0 * time.Second), time.Duration(0 * time.Second)}
+		messages <- MirrorStatus{allErrors, time.Now(), 0, 0}
 		return
 	}
 	err = sourceRemote.Fetch(&git.FetchOptions{
@@ -185,7 +187,7 @@ func MirrorRepository(messages chan MirrorStatus, source, destination string, so
 	})
 	if err != nil {
 		ProcessError(err, "fetching branches from ", source, &allErrors)
-		messages <- MirrorStatus{allErrors, time.Now(), time.Duration(0 * time.Second), time.Duration(0 * time.Second)}
+		messages <- MirrorStatus{allErrors, time.Now(), 0, 0}
 		return
 	}
 
@@ -198,7 +200,7 @@ func MirrorRepository(messages chan MirrorStatus, source, destination string, so
 	})
 	if err != nil {
 		ProcessError(err, "creating remote for ", destination, &allErrors)
-		messages <- MirrorStatus{allErrors, time.Now(), time.Duration(0 * time.Second), time.Duration(0 * time.Second)}
+		messages <- MirrorStatus{allErrors, time.Now(), 0, 0}
 		return
 	}
 
@@ -207,7 +209,7 @@ func MirrorRepository(messages chan MirrorStatus, source, destination string, so
 	destinationBranchList, destinationTagList, err := GetBranchesAndTagsFromRemote(repository, "destination", &git.ListOptions{Auth: destinationAuth})
 	if err != nil {
 		ProcessError(err, "getting branches and tags from ", destination, &allErrors)
-		messages <- MirrorStatus{allErrors, time.Now(), time.Duration(0 * time.Second), time.Duration(0 * time.Second)}
+		messages <- MirrorStatus{allErrors, time.Now(), 0, 0}
 		return
 	}
 	log.Debug(destination, " branches = ", destinationBranchList)
@@ -221,7 +223,6 @@ func MirrorRepository(messages chan MirrorStatus, source, destination string, so
 			RefSpecs:   []config.RefSpec{config.RefSpec("+" + refBranchPrefix + branch + ":" + refBranchPrefix + branch)},
 			Auth:       destinationAuth, Force: true, Atomic: true})
 		ProcessError(err, "pushing branch "+branch+" to ", destination, &allErrors)
-
 	}
 
 	// Remove any branches not present in the source repository anymore.
