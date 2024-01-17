@@ -107,6 +107,7 @@ func newRootCommand() {
 			}
 
 			SetRepositoryAuth(&inputRepositories, defaultSettings)
+			ValidateRepositories(inputRepositories)
 
 			err = os.MkdirAll(localTempDirectory, os.ModePerm)
 			checkError(err)

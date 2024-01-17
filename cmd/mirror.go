@@ -57,13 +57,41 @@ func SetRepositoryAuth(repositories *[]RepositoryPair, defaultSettings Repositor
 	log.Debug("repositories = ", string(repositoriesJSON))
 }
 
-func GetBranchesAndTagsFromRemote(repository *git.Repository, remoteName string, listOptions *git.ListOptions) ([]string, []string) {
-	remote, err := repository.Remote(remoteName)
-	checkError(err)
-	refList, err := remote.List(listOptions)
-	checkError(err)
+func ValidateRepositories(repositories []RepositoryPair) {
+	var allDestinationRepositories []string
+	for _, repo := range repositories {
+		if stringInSlice(repo.Destination.RepositoryURL, allDestinationRepositories) {
+			log.Fatal(
+				"Error: multiple repositories set to be synchronized to the same destination repository: ",
+				repo.Source.RepositoryURL,
+			)
+		}
+		allDestinationRepositories = append(allDestinationRepositories, repo.Destination.RepositoryURL)
+		sourceURL := strings.Split(repo.Source.RepositoryURL, "/")
+		sourceProjectName := sourceURL[len(sourceURL)-1]
+		destinationURL := strings.Split(repo.Destination.RepositoryURL, "/")
+		destinationProjectName := destinationURL[len(destinationURL)-1]
+		if sourceProjectName != destinationProjectName {
+			log.Warn(
+				"Warning: Source project name (", sourceProjectName,
+				") and destination project name (", destinationProjectName, ") differ!",
+			)
+		}
+	}
+}
+
+func GetBranchesAndTagsFromRemote(repository *git.Repository, remoteName string, listOptions *git.ListOptions) ([]string, []string, error) {
 	var branchList []string
 	var tagList []string
+	remote, err := repository.Remote(remoteName)
+	if err != nil {
+		return branchList, tagList, err
+	}
+	refList, err := remote.List(listOptions)
+	if err != nil {
+		return branchList, tagList, err
+	}
+
 	for _, ref := range refList {
 		refName := ref.Name().String()
 		if strings.HasPrefix(refName, refBranchPrefix) {
@@ -74,10 +102,10 @@ func GetBranchesAndTagsFromRemote(repository *git.Repository, remoteName string,
 			tagList = append(tagList, tagName)
 		}
 	}
-	return branchList, tagList
+	return branchList, tagList, nil
 }
 
-func ProcessPushingError(err error, url string, activity string, allErrors *[]string) {
+func ProcessError(err error, activity string, url string, allErrors *[]string) {
 	var e string
 	if err != nil && err != git.NoErrAlreadyUpToDate {
 		e = "Error while " + activity + url + ": " + err.Error()
@@ -128,21 +156,38 @@ func MirrorRepository(messages chan MirrorStatus, source, destination string, so
 	gitDirectory, err := os.MkdirTemp(localTempDirectory, "")
 	checkError(err)
 	defer os.RemoveAll(gitDirectory)
+	var allErrors []string
 	gitCloneOptions := getCloneOptions(source, sourceAuthentication)
 	repository, err := git.PlainClone(gitDirectory, false, gitCloneOptions)
 	if err != nil {
-		log.Error("Error while cloning ", source, ": ", err)
+		ProcessError(err, "cloning repository from ", source, &allErrors)
+		messages <- MirrorStatus{allErrors, time.Now(), time.Duration(0 * time.Second), time.Duration(0 * time.Second)}
+		return
 	}
-	sourceBranchList, sourceTagList := GetBranchesAndTagsFromRemote(repository, "origin", &git.ListOptions{})
+	sourceBranchList, sourceTagList, err := GetBranchesAndTagsFromRemote(repository, "origin", &git.ListOptions{})
+	if err != nil {
+		ProcessError(err, "getting branches and tags from ", source, &allErrors)
+		messages <- MirrorStatus{allErrors, time.Now(), time.Duration(0 * time.Second), time.Duration(0 * time.Second)}
+		return
+	}
 	log.Debug(source, " branches = ", sourceBranchList)
 	log.Debug(source, " tags = ", sourceTagList)
 
 	log.Info("Fetching all branches from ", source, "...")
 	sourceRemote, err := repository.Remote("origin")
-	checkError(err)
-	sourceRemote.Fetch(&git.FetchOptions{
+	if err != nil {
+		ProcessError(err, "getting source remote for ", source, &allErrors)
+		messages <- MirrorStatus{allErrors, time.Now(), time.Duration(0 * time.Second), time.Duration(0 * time.Second)}
+		return
+	}
+	err = sourceRemote.Fetch(&git.FetchOptions{
 		RefSpecs: []config.RefSpec{"refs/heads/*:refs/heads/*"},
 	})
+	if err != nil {
+		ProcessError(err, "fetching branches from ", source, &allErrors)
+		messages <- MirrorStatus{allErrors, time.Now(), time.Duration(0 * time.Second), time.Duration(0 * time.Second)}
+		return
+	}
 
 	cloneDuration := time.Since(cloneStart)
 	cloneEnd, pushStart := time.Now(), time.Now()
@@ -151,15 +196,22 @@ func MirrorRepository(messages chan MirrorStatus, source, destination string, so
 		Name: "destination",
 		URLs: []string{destination},
 	})
-	checkError(err)
+	if err != nil {
+		ProcessError(err, "creating remote for ", destination, &allErrors)
+		messages <- MirrorStatus{allErrors, time.Now(), time.Duration(0 * time.Second), time.Duration(0 * time.Second)}
+		return
+	}
 
 	destinationAuth := getDestinationAuth(destinationAuthentication)
 
-	destinationBranchList, destinationTagList := GetBranchesAndTagsFromRemote(repository, "destination", &git.ListOptions{Auth: destinationAuth})
+	destinationBranchList, destinationTagList, err := GetBranchesAndTagsFromRemote(repository, "destination", &git.ListOptions{Auth: destinationAuth})
+	if err != nil {
+		ProcessError(err, "getting branches and tags from ", destination, &allErrors)
+		messages <- MirrorStatus{allErrors, time.Now(), time.Duration(0 * time.Second), time.Duration(0 * time.Second)}
+		return
+	}
 	log.Debug(destination, " branches = ", destinationBranchList)
 	log.Debug(destination, " tags = ", destinationTagList)
-
-	var allErrors []string
 
 	log.Info("Pushing all branches from ", source, " to ", destination)
 	for _, branch := range sourceBranchList {
@@ -168,9 +220,10 @@ func MirrorRepository(messages chan MirrorStatus, source, destination string, so
 			RemoteName: "destination",
 			RefSpecs:   []config.RefSpec{config.RefSpec("+" + refBranchPrefix + branch + ":" + refBranchPrefix + branch)},
 			Auth:       destinationAuth, Force: true, Atomic: true})
-		ProcessPushingError(err, destination, "pushing branch "+branch+" to ", &allErrors)
+		ProcessError(err, "pushing branch "+branch+" to ", destination, &allErrors)
 
 	}
+
 	// Remove any branches not present in the source repository anymore.
 	for _, branch := range destinationBranchList {
 		if !stringInSlice(branch, sourceBranchList) {
@@ -179,15 +232,17 @@ func MirrorRepository(messages chan MirrorStatus, source, destination string, so
 				RemoteName: "destination",
 				RefSpecs:   []config.RefSpec{config.RefSpec(":" + refBranchPrefix + branch)},
 				Auth:       destinationAuth, Force: true, Atomic: true})
-			ProcessPushingError(err, destination, "removing branch "+branch+" from ", &allErrors)
+			ProcessError(err, "removing branch "+branch+" from ", destination, &allErrors)
 		}
 	}
+
 	log.Info("Pushing all tags from ", source, " to ", destination)
 	err = repository.Push(&git.PushOptions{
 		RemoteName: "destination",
 		RefSpecs:   []config.RefSpec{config.RefSpec("+" + refTagPrefix + "*:" + refTagPrefix + "*")},
 		Auth:       destinationAuth, Force: true, Atomic: true})
-	ProcessPushingError(err, destination, "pushing all tags to ", &allErrors)
+	ProcessError(err, "pushing all tags to ", destination, &allErrors)
+
 	// Remove any tags not present in the source repository anymore.
 	for _, tag := range destinationTagList {
 		if !stringInSlice(tag, sourceTagList) {
@@ -196,7 +251,7 @@ func MirrorRepository(messages chan MirrorStatus, source, destination string, so
 				RemoteName: "destination",
 				RefSpecs:   []config.RefSpec{config.RefSpec(":" + refTagPrefix + tag)},
 				Auth:       destinationAuth, Force: true, Atomic: true})
-			ProcessPushingError(err, destination, "removing tag "+tag+" from ", &allErrors)
+			ProcessError(err, "removing tag "+tag+" from ", destination, &allErrors)
 		}
 	}
 	pushDuration := time.Since(pushStart)
@@ -204,7 +259,7 @@ func MirrorRepository(messages chan MirrorStatus, source, destination string, so
 }
 
 func MirrorRepositories(repos []RepositoryPair) {
-	messages := make(chan MirrorStatus)
+	messages := make(chan MirrorStatus, 100)
 	var allErrors []string
 	synchronizationStart := time.Now()
 	for _, repository := range repos {
@@ -225,7 +280,9 @@ results_receiver_loop:
 			receivedResults++
 			log.Info("Finished mirroring ", receivedResults, " out of ", len(repos), " repositories.")
 			combineSlices(msg.Errors, &allErrors)
-			lastCloneEnd = msg.LastCloneEnd
+			if lastCloneEnd.Before(msg.LastCloneEnd) {
+				lastCloneEnd = msg.LastCloneEnd
+			}
 			totalCloneDuration += msg.CloneDuration
 			totalPushDuration += msg.PushDuration
 			if receivedResults == len(repos) {
