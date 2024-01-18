@@ -158,6 +158,29 @@ func getListOptions(sourceAuth Authentication) *git.ListOptions {
 	return gitListOptions
 }
 
+func getFetchOptions(refSpec string, sourceAuth Authentication) *git.FetchOptions {
+	var sourcePat string
+	if sourceAuth.Method == token {
+		sourcePat = os.Getenv(sourceAuth.TokenName)
+	} else if sourceAuth.Method != "" {
+		log.Error("Unknown auth method: ", sourceAuth.Method)
+	}
+	if sourcePat != "" {
+		gitFetchOptions := &git.FetchOptions{
+			RefSpecs: []config.RefSpec{config.RefSpec(refSpec)},
+			Auth: &githttp.BasicAuth{
+				Username: basicAuthUsername,
+				Password: sourcePat,
+			},
+		}
+		return gitFetchOptions
+	}
+	gitFetchOptions := &git.FetchOptions{
+		RefSpecs: []config.RefSpec{config.RefSpec(refSpec)},
+	}
+	return gitFetchOptions
+}
+
 func getDestinationAuth(destAuth Authentication) *githttp.BasicAuth {
 	var destinationPat string
 	if destAuth.Method == token {
@@ -186,6 +209,7 @@ func MirrorRepository(messages chan MirrorStatus, source, destination string, so
 		messages <- MirrorStatus{allErrors, time.Now(), 0, 0}
 		return
 	}
+
 	gitListOptions := getListOptions(sourceAuthentication)
 	sourceBranchList, sourceTagList, err := GetBranchesAndTagsFromRemote(repository, "origin", gitListOptions)
 	if err != nil {
@@ -203,9 +227,9 @@ func MirrorRepository(messages chan MirrorStatus, source, destination string, so
 		messages <- MirrorStatus{allErrors, time.Now(), 0, 0}
 		return
 	}
-	err = sourceRemote.Fetch(&git.FetchOptions{
-		RefSpecs: []config.RefSpec{"refs/heads/*:refs/heads/*"},
-	})
+
+	gitFetchOptions := getFetchOptions("refs/heads/*:refs/heads/*", sourceAuthentication)
+	err = sourceRemote.Fetch(gitFetchOptions)
 	if err != nil {
 		ProcessError(err, "fetching branches from ", source, &allErrors)
 		messages <- MirrorStatus{allErrors, time.Now(), 0, 0}
