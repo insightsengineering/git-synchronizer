@@ -1,6 +1,6 @@
 # git-synchronizer
 
-[![build](https://github.com/insightsengineering/git-synchronizer/actions/workflows/build.yml/badge.svg)](https://github.com/insightsengineering/git-synchronizer/actions/workflows/build.yml)
+[![build](https://github.com/insightsengineering/git-synchronizer/actions/workflows/test.yml/badge.svg)](https://github.com/insightsengineering/git-synchronizer/actions/workflows/test.yml)
 
 ## Installing
 
@@ -25,15 +25,48 @@ When using custom configuration file, if you specify command line flags, the lat
 Example contents of configuration file:
 
 ```yaml
-logLevel: trace
-exampleParameter: exampleValue
+defaults:
+  source:
+    auth:
+      method: token
+      token_name: GITHUB_TOKEN
+  destination:
+    auth:
+      method: token
+      token_name: GITLAB_TOKEN
+
+repositories:
+
+  # Repositories using default tokens.
+  - source:
+      repo: https://github.example.com/org-1/repo-1
+    destination:
+      repo: https://gitlab.example.com/org-5/repo-1
+
+  - source:
+      # Overriding token for source repository.
+      auth:
+        method: token
+        token_name: GITHUB_TOKEN_EXTRA
+      repo: https://github.example.com/org-1/repo-2
+    destination:
+      repo: https://gitlab.example.com/org-5/repo-2
+
+  - source:
+      repo: https://github.example.com/org-1/repo-3
+    destination:
+      # Overriding token for destination repository.
+      auth:
+        method: token
+        token_name: GITLAB_TOKEN_EXTRA
+      repo: https://gitlab.example.com/org-5/repo-3
 ```
 
 ## Environment variables
 
 `git-synchronizer` reads environment variables with `GITSYNCHRONIZER_` prefix and tries to match them with CLI flags.
 For example, setting the following variables will override the respective values from configuration file:
-`GITSYNCHRONIZER_LOGLEVEL`, `GITSYNCHRONIZER_EXAMPLEPARAMETER` etc.
+`GITSYNCHRONIZER_LOGLEVEL` etc.
 
 The order of precedence is:
 
