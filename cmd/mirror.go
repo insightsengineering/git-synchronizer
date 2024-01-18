@@ -38,6 +38,8 @@ type MirrorStatus struct {
 	PushDuration  time.Duration
 }
 
+// SetRepositoryAuth ensures that repositories for which the authentication settings have not been
+// overridden, use the default authentication settings from config file.
 func SetRepositoryAuth(repositories *[]RepositoryPair, defaultSettings RepositoryPair) {
 	for i := 0; i < len(*repositories); i++ {
 		if (*repositories)[i].Source.Auth.Method == "" {
@@ -55,9 +57,10 @@ func SetRepositoryAuth(repositories *[]RepositoryPair, defaultSettings Repositor
 	}
 	repositoriesJSON, err := json.MarshalIndent(*repositories, "", "  ")
 	checkError(err)
-	log.Debug("repositories = ", string(repositoriesJSON))
+	log.Trace("repositories = ", string(repositoriesJSON))
 }
 
+// ValidateRepositories checks for common issues with input repository data from config file.
 func ValidateRepositories(repositories []RepositoryPair) {
 	var allDestinationRepositories []string
 	for _, repo := range repositories {
@@ -81,6 +84,7 @@ func ValidateRepositories(repositories []RepositoryPair) {
 	}
 }
 
+// GetBranchesAndTagsFromRemote returns list of branches and tags present in remoteName of repository.
 func GetBranchesAndTagsFromRemote(repository *git.Repository, remoteName string, listOptions *git.ListOptions) ([]string, []string, error) {
 	var branchList []string
 	var tagList []string
@@ -106,6 +110,7 @@ func GetBranchesAndTagsFromRemote(repository *git.Repository, remoteName string,
 	return branchList, tagList, nil
 }
 
+// ProcessError formats err and appends it to allErrors.
 func ProcessError(err error, activity string, url string, allErrors *[]string) {
 	var e string
 	if err != nil && err != git.NoErrAlreadyUpToDate {
@@ -117,7 +122,8 @@ func ProcessError(err error, activity string, url string, allErrors *[]string) {
 	}
 }
 
-func getCloneOptions(source string, sourceAuth Authentication) *git.CloneOptions {
+// GetCloneOptions returns clone options for source repository.
+func GetCloneOptions(source string, sourceAuth Authentication) *git.CloneOptions {
 	var sourcePat string
 	if sourceAuth.Method == token {
 		sourcePat = os.Getenv(sourceAuth.TokenName)
@@ -138,7 +144,8 @@ func getCloneOptions(source string, sourceAuth Authentication) *git.CloneOptions
 	return gitCloneOptions
 }
 
-func getListOptions(sourceAuth Authentication) *git.ListOptions {
+// GetListOptions returns list options for source repository.
+func GetListOptions(sourceAuth Authentication) *git.ListOptions {
 	var sourcePat string
 	if sourceAuth.Method == token {
 		sourcePat = os.Getenv(sourceAuth.TokenName)
@@ -158,7 +165,8 @@ func getListOptions(sourceAuth Authentication) *git.ListOptions {
 	return gitListOptions
 }
 
-func getFetchOptions(refSpec string, sourceAuth Authentication) *git.FetchOptions {
+// GetFetchOptions returns fetch options for source repository.
+func GetFetchOptions(refSpec string, sourceAuth Authentication) *git.FetchOptions {
 	var sourcePat string
 	if sourceAuth.Method == token {
 		sourcePat = os.Getenv(sourceAuth.TokenName)
@@ -181,7 +189,8 @@ func getFetchOptions(refSpec string, sourceAuth Authentication) *git.FetchOption
 	return gitFetchOptions
 }
 
-func getDestinationAuth(destAuth Authentication) *githttp.BasicAuth {
+// GetDestionationAuth returns authentication struct for destination git repository.
+func GetDestinationAuth(destAuth Authentication) *githttp.BasicAuth {
 	var destinationPat string
 	if destAuth.Method == token {
 		destinationPat = os.Getenv(destAuth.TokenName)
@@ -195,14 +204,16 @@ func getDestinationAuth(destAuth Authentication) *githttp.BasicAuth {
 	return destinationAuth
 }
 
+// MirrorRepository mirrors branches and tags from source to destination. Tags and branches
+// no longer present in source are removed from destination.
 func MirrorRepository(messages chan MirrorStatus, source, destination string, sourceAuthentication, destinationAuthentication Authentication) {
-	log.Debug("Cloning ", source, "...")
+	log.Debug("Cloning ", source)
 	cloneStart := time.Now()
 	gitDirectory, err := os.MkdirTemp(localTempDirectory, "")
 	checkError(err)
 	defer os.RemoveAll(gitDirectory)
 	var allErrors []string
-	gitCloneOptions := getCloneOptions(source, sourceAuthentication)
+	gitCloneOptions := GetCloneOptions(source, sourceAuthentication)
 	repository, err := git.PlainClone(gitDirectory, false, gitCloneOptions)
 	if err != nil {
 		ProcessError(err, "cloning repository from ", source, &allErrors)
@@ -210,7 +221,7 @@ func MirrorRepository(messages chan MirrorStatus, source, destination string, so
 		return
 	}
 
-	gitListOptions := getListOptions(sourceAuthentication)
+	gitListOptions := GetListOptions(sourceAuthentication)
 	sourceBranchList, sourceTagList, err := GetBranchesAndTagsFromRemote(repository, "origin", gitListOptions)
 	if err != nil {
 		ProcessError(err, "getting branches and tags from ", source, &allErrors)
@@ -220,7 +231,7 @@ func MirrorRepository(messages chan MirrorStatus, source, destination string, so
 	log.Debug(source, " branches = ", sourceBranchList)
 	log.Debug(source, " tags = ", sourceTagList)
 
-	log.Info("Fetching all branches from ", source, "...")
+	log.Info("Fetching all branches from ", source)
 	sourceRemote, err := repository.Remote("origin")
 	if err != nil {
 		ProcessError(err, "getting source remote for ", source, &allErrors)
@@ -228,7 +239,7 @@ func MirrorRepository(messages chan MirrorStatus, source, destination string, so
 		return
 	}
 
-	gitFetchOptions := getFetchOptions("refs/heads/*:refs/heads/*", sourceAuthentication)
+	gitFetchOptions := GetFetchOptions("refs/heads/*:refs/heads/*", sourceAuthentication)
 	err = sourceRemote.Fetch(gitFetchOptions)
 	if err != nil {
 		ProcessError(err, "fetching branches from ", source, &allErrors)
@@ -249,7 +260,7 @@ func MirrorRepository(messages chan MirrorStatus, source, destination string, so
 		return
 	}
 
-	destinationAuth := getDestinationAuth(destinationAuthentication)
+	destinationAuth := GetDestinationAuth(destinationAuthentication)
 
 	destinationBranchList, destinationTagList, err := GetBranchesAndTagsFromRemote(repository, "destination", &git.ListOptions{Auth: destinationAuth})
 	if err != nil {
@@ -304,6 +315,8 @@ func MirrorRepository(messages chan MirrorStatus, source, destination string, so
 	messages <- MirrorStatus{allErrors, cloneEnd, cloneDuration, pushDuration}
 }
 
+// MirrorRepositories ensures that branches and tags from source repository are mirrored to
+// the destination repository for each repositoryPair.
 func MirrorRepositories(repos []RepositoryPair) {
 	messages := make(chan MirrorStatus, 100)
 	var allErrors []string
@@ -343,8 +356,8 @@ results_receiver_loop:
 	log.Infof("Last clone finished %v after synchronization had started (%.1f%% of total synchronization time).",
 		cloneDuration.Round(time.Second), (float64(100)*cloneDuration.Seconds())/syncDuration.Seconds())
 	log.Infof("Synchronization took %v (wall-clock time).", syncDuration.Round(time.Second))
-	log.Infof("Total clone duration: %v (goroutine time).", totalCloneDuration.Round(time.Second))
-	log.Infof("Total push duration: %v (goroutine time).", totalPushDuration.Round(time.Second))
+	log.Debugf("Total clone duration: %v (goroutine time).", totalCloneDuration.Round(time.Second))
+	log.Debugf("Total push duration: %v (goroutine time).", totalPushDuration.Round(time.Second))
 	if len(allErrors) > 0 {
 		log.Error("The following errors have been encountered:")
 		for _, e := range allErrors {

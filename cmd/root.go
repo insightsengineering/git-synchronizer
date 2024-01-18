@@ -97,8 +97,8 @@ func newRootCommand() {
 			checkError(err)
 			defaultSettingsJSON, err := json.MarshalIndent(defaultSettings, "", "  ")
 			checkError(err)
-			log.Debug("inputRepositories = ", string(inputRepositoriesJSON))
-			log.Debug("defaultSettings = ", string(defaultSettingsJSON))
+			log.Trace("inputRepositories = ", string(inputRepositoriesJSON))
+			log.Trace("defaultSettings = ", string(defaultSettingsJSON))
 
 			if runtime.GOOS == "windows" {
 				localTempDirectory = os.Getenv("TMP") + `\tmp\git-synchronizer`
