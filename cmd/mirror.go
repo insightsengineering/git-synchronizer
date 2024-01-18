@@ -302,8 +302,9 @@ results_receiver_loop:
 	log.Infof("Total push duration: %v (goroutine time).", totalPushDuration.Round(time.Second))
 	if len(allErrors) > 0 {
 		log.Error("The following errors have been encountered:")
-	}
-	for _, e := range allErrors {
-		log.Error(e)
+		for _, e := range allErrors {
+			log.Error(e)
+		}
+		os.Exit(1)
 	}
 }
