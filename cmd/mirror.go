@@ -138,6 +138,26 @@ func getCloneOptions(source string, sourceAuth Authentication) *git.CloneOptions
 	return gitCloneOptions
 }
 
+func getListOptions(sourceAuth Authentication) *git.ListOptions {
+	var sourcePat string
+	if sourceAuth.Method == token {
+		sourcePat = os.Getenv(sourceAuth.TokenName)
+	} else if sourceAuth.Method != "" {
+		log.Error("Unknown auth method: ", sourceAuth.Method)
+	}
+	if sourcePat != "" {
+		gitListOptions := &git.ListOptions{
+			Auth: &githttp.BasicAuth{
+				Username: basicAuthUsername,
+				Password: sourcePat,
+			},
+		}
+		return gitListOptions
+	}
+	gitListOptions := &git.ListOptions{}
+	return gitListOptions
+}
+
 func getDestinationAuth(destAuth Authentication) *githttp.BasicAuth {
 	var destinationPat string
 	if destAuth.Method == token {
@@ -166,7 +186,8 @@ func MirrorRepository(messages chan MirrorStatus, source, destination string, so
 		messages <- MirrorStatus{allErrors, time.Now(), 0, 0}
 		return
 	}
-	sourceBranchList, sourceTagList, err := GetBranchesAndTagsFromRemote(repository, "origin", &git.ListOptions{})
+	gitListOptions := getListOptions(sourceAuthentication)
+	sourceBranchList, sourceTagList, err := GetBranchesAndTagsFromRemote(repository, "origin", gitListOptions)
 	if err != nil {
 		ProcessError(err, "getting branches and tags from ", source, &allErrors)
 		messages <- MirrorStatus{allErrors, time.Now(), 0, 0}
