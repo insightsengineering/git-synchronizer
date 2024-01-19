@@ -1,6 +1,12 @@
 # git-synchronizer
 
-[![build](https://github.com/insightsengineering/git-synchronizer/actions/workflows/build.yml/badge.svg)](https://github.com/insightsengineering/git-synchronizer/actions/workflows/build.yml)
+[![build](https://github.com/insightsengineering/git-synchronizer/actions/workflows/test.yml/badge.svg)](https://github.com/insightsengineering/git-synchronizer/actions/workflows/test.yml)
+
+`git-synchronizer` allows you to mirror a collection of `git` repositories from one location to another. For each source repository, you can set a destination repository to which the source should be mirrored (see example [configuration file](#configuration-file)).
+
+`git-synchronizer` will:
+* push all branches and tags from source to destination repository,
+* remove branches and tags from the destination repository which are no longer present in source repository.
 
 ## Installing
 
@@ -16,30 +22,68 @@ git-synchronizer --help
 
 ## Configuration file
 
-If you'd like to set the options in a configuration file, by default `git-synchronizer` checks `~/.git-synchronizer`, `~/.git-synchronizer.yaml` and `~/.git-synchronizer.yml` files.
+By default `git-synchronizer` attempts to read `~/.git-synchronizer`, `~/.git-synchronizer.yaml` and `~/.git-synchronizer.yml` configuration files.
 If any of these files exist, `git-synchronizer` uses options defined there, unless they are overridden by command line flags.
 
 You can also specify custom path to configuration file with `--config <your-configuration-file>.yml` command line flag.
-When using custom configuration file, if you specify command line flags, the latter will still take precedence.
 
 Example contents of configuration file:
 
 ```yaml
-logLevel: trace
-exampleParameter: exampleValue
+# Default authentication methods to use for source and destination repositories (optional).
+defaults:
+  source:
+    auth:
+      method: token
+      # Name of environment variable storing the Personal Access Token with permissions to read source repositories.
+      token_name: GITHUB_TOKEN
+  destination:
+    auth:
+      method: token
+      # Name of environment variable storing the Personal Access Token with permissions to push to destination repositories.
+      token_name: GITLAB_TOKEN
+
+# List of repository pairs to be synchronized.
+repositories:
+
+  # Repositories using default tokens.
+  - source:
+      repo: https://github.example.com/org-1/repo-1
+    destination:
+      repo: https://gitlab.example.com/org-5/repo-1
+
+  - source:
+      repo: https://github.example.com/org-1/repo-2
+      # Overriding token for source repository.
+      auth:
+        method: token
+        token_name: GITHUB_TOKEN_EXTRA
+    destination:
+      repo: https://gitlab.example.com/org-5/repo-2
+
+  - source:
+      repo: https://github.example.com/org-1/repo-3
+    destination:
+      repo: https://gitlab.example.com/org-5/repo-3
+      # Overriding token for destination repository.
+      auth:
+        method: token
+        token_name: GITLAB_TOKEN_EXTRA
 ```
 
 ## Environment variables
 
 `git-synchronizer` reads environment variables with `GITSYNCHRONIZER_` prefix and tries to match them with CLI flags.
 For example, setting the following variables will override the respective values from configuration file:
-`GITSYNCHRONIZER_LOGLEVEL`, `GITSYNCHRONIZER_EXAMPLEPARAMETER` etc.
+`GITSYNCHRONIZER_LOGLEVEL` etc.
 
 The order of precedence is:
 
 CLI flag → environment variable → configuration file → default value.
 
 To check the available names of environment variables, please run `git-synchronizer --help`.
+
+Please note that providing the list of repositories to be synchronized with a CLI flag is not supported.
 
 ## Development
 
