@@ -18,6 +18,7 @@ package cmd
 import (
 	"encoding/json"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -107,6 +108,8 @@ func GetBranchesAndTagsFromRemote(repository *git.Repository, remoteName string,
 			tagList = append(tagList, tagName)
 		}
 	}
+	sort.Strings(branchList)
+	sort.Strings(tagList)
 	return branchList, tagList, nil
 }
 
