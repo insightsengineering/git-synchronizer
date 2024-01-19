@@ -86,7 +86,7 @@ func newRootCommand() {
 	rootCmd = &cobra.Command{
 		Use:   "git-synchronizer",
 		Short: "A tool to synchronize git repositories.",
-		Long:  `A tool to synchronize git repositories.`,
+		Long:  `A tool to synchronize git repositories from one git server to another.`,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			initializeConfig()
 		},
