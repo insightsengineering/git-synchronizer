@@ -20,21 +20,24 @@ If you'd like to set the options in a configuration file, by default `git-synchr
 If any of these files exist, `git-synchronizer` uses options defined there, unless they are overridden by command line flags.
 
 You can also specify custom path to configuration file with `--config <your-configuration-file>.yml` command line flag.
-When using custom configuration file, if you specify command line flags, the latter will still take precedence.
 
 Example contents of configuration file:
 
 ```yaml
+# Default authentication methods to use for source and destination repositories (optional).
 defaults:
   source:
     auth:
       method: token
+      # Name of environment variable storing the token.
       token_name: GITHUB_TOKEN
   destination:
     auth:
       method: token
+      # Name of environment variable storing the token.
       token_name: GITLAB_TOKEN
 
+# List of repository pairs to be synchronized.
 repositories:
 
   # Repositories using default tokens.
@@ -44,22 +47,22 @@ repositories:
       repo: https://gitlab.example.com/org-5/repo-1
 
   - source:
+      repo: https://github.example.com/org-1/repo-2
       # Overriding token for source repository.
       auth:
         method: token
         token_name: GITHUB_TOKEN_EXTRA
-      repo: https://github.example.com/org-1/repo-2
     destination:
       repo: https://gitlab.example.com/org-5/repo-2
 
   - source:
       repo: https://github.example.com/org-1/repo-3
     destination:
+      repo: https://gitlab.example.com/org-5/repo-3
       # Overriding token for destination repository.
       auth:
         method: token
         token_name: GITLAB_TOKEN_EXTRA
-      repo: https://gitlab.example.com/org-5/repo-3
 ```
 
 ## Environment variables
@@ -73,6 +76,8 @@ The order of precedence is:
 CLI flag → environment variable → configuration file → default value.
 
 To check the available names of environment variables, please run `git-synchronizer --help`.
+
+Please note that providing the list of repositories to be synchronized with a CLI flag is not supported.
 
 ## Development
 

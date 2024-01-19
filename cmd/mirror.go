@@ -265,8 +265,6 @@ func MirrorRepository(messages chan MirrorStatus, source, destination string, so
 	destinationBranchList, destinationTagList, err := GetBranchesAndTagsFromRemote(repository, "destination", &git.ListOptions{Auth: destinationAuth})
 	if err != nil {
 		ProcessError(err, "getting branches and tags from ", destination, &allErrors)
-		messages <- MirrorStatus{allErrors, time.Now(), 0, 0}
-		return
 	}
 	log.Debug(destination, " branches = ", destinationBranchList)
 	log.Debug(destination, " tags = ", destinationTagList)
