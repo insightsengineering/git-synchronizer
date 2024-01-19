@@ -2,6 +2,12 @@
 
 [![build](https://github.com/insightsengineering/git-synchronizer/actions/workflows/test.yml/badge.svg)](https://github.com/insightsengineering/git-synchronizer/actions/workflows/test.yml)
 
+`git-synchronizer` allows you to mirror a collection of `git` repositories from one location to another. For each source repository, you can set a destination repository to which the source should be mirrored (see example [configuration file](#configuration-file)).
+
+`git-synchronizer` will:
+* push all branches and tags from source to destination repository,
+* remove branches and tags from the destination repository which are no longer present in source repository.
+
 ## Installing
 
 Simply download the project for your distribution from the [releases](https://github.com/insightsengineering/git-synchronizer/releases) page. `git-synchronizer` is distributed as a single binary file and does not require any additional system requirements.
@@ -16,7 +22,7 @@ git-synchronizer --help
 
 ## Configuration file
 
-If you'd like to set the options in a configuration file, by default `git-synchronizer` checks `~/.git-synchronizer`, `~/.git-synchronizer.yaml` and `~/.git-synchronizer.yml` files.
+By default `git-synchronizer` attempts to read `~/.git-synchronizer`, `~/.git-synchronizer.yaml` and `~/.git-synchronizer.yml` configuration files.
 If any of these files exist, `git-synchronizer` uses options defined there, unless they are overridden by command line flags.
 
 You can also specify custom path to configuration file with `--config <your-configuration-file>.yml` command line flag.
@@ -29,12 +35,12 @@ defaults:
   source:
     auth:
       method: token
-      # Name of environment variable storing the token.
+      # Name of environment variable storing the Personal Access Token with permissions to read source repositories.
       token_name: GITHUB_TOKEN
   destination:
     auth:
       method: token
-      # Name of environment variable storing the token.
+      # Name of environment variable storing the Personal Access Token with permissions to push to destination repositories.
       token_name: GITLAB_TOKEN
 
 # List of repository pairs to be synchronized.

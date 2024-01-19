@@ -30,6 +30,7 @@ import (
 
 var cfgFile string
 var logLevel string
+var workingDirectory string
 
 type RepositoryPair struct {
 	Source      Repository `mapstructure:"source"`
@@ -101,9 +102,9 @@ func newRootCommand() {
 			log.Trace("defaultSettings = ", string(defaultSettingsJSON))
 
 			if runtime.GOOS == "windows" {
-				localTempDirectory = os.Getenv("TMP") + `\tmp\git-synchronizer`
+				localTempDirectory = os.Getenv("TMP") + workingDirectory
 			} else {
-				localTempDirectory = "/tmp/git-synchronizer"
+				localTempDirectory = workingDirectory
 			}
 
 			SetRepositoryAuth(&inputRepositories, defaultSettings)
@@ -119,6 +120,8 @@ func newRootCommand() {
 		"config file (default is $HOME/.git-synchronizer.yaml)")
 	rootCmd.PersistentFlags().StringVarP(&logLevel, "logLevel", "l", "info",
 		"Logging level (trace, debug, info, warn, error). ")
+	rootCmd.PersistentFlags().StringVarP(&workingDirectory, "workingDirectory", "w", "/tmp/git-synchronizer",
+		"Directory where synchronized repositories will be cloned.")
 
 	// Add version command.
 	rootCmd.AddCommand(extension.NewVersionCobraCmd())
@@ -168,7 +171,7 @@ func Execute() {
 
 func initializeConfig() {
 	for _, v := range []string{
-		"logLevel",
+		"logLevel", "workingDirectory",
 	} {
 		// If the flag has not been set in newRootCommand() and it has been set in initConfig().
 		// In other words: if it's not been provided in command line, but has been

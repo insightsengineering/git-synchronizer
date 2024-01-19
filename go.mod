@@ -2,6 +2,8 @@ module github.com/insightsengineering/git-synchronizer
 
 go 1.21
 
+toolchain go1.21.6
+
 require (
 	github.com/go-git/go-git/v5 v5.11.0
 	github.com/jamiealquiza/envy v1.1.0

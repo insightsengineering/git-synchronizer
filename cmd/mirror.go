@@ -23,7 +23,7 @@ import (
 	"time"
 
 	git "github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/config"
+	gitconfig "github.com/go-git/go-git/v5/config"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 )
 
@@ -67,7 +67,7 @@ func ValidateRepositories(repositories []RepositoryPair) {
 	for _, repo := range repositories {
 		if stringInSlice(repo.Destination.RepositoryURL, allDestinationRepositories) {
 			log.Fatal(
-				"Error: multiple repositories set to be synchronized to the same destination repository: ",
+				"Multiple repositories set to be synchronized to the same destination repository: ",
 				repo.Source.RepositoryURL,
 			)
 		}
@@ -78,7 +78,7 @@ func ValidateRepositories(repositories []RepositoryPair) {
 		destinationProjectName := destinationURL[len(destinationURL)-1]
 		if sourceProjectName != destinationProjectName {
 			log.Warn(
-				"Warning: Source project name (", sourceProjectName,
+				"Source project name (", sourceProjectName,
 				") and destination project name (", destinationProjectName, ") differ!",
 			)
 		}
@@ -178,7 +178,7 @@ func GetFetchOptions(refSpec string, sourceAuth Authentication) *git.FetchOption
 	}
 	if sourcePat != "" {
 		gitFetchOptions := &git.FetchOptions{
-			RefSpecs: []config.RefSpec{config.RefSpec(refSpec)},
+			RefSpecs: []gitconfig.RefSpec{gitconfig.RefSpec(refSpec)},
 			Auth: &githttp.BasicAuth{
 				Username: basicAuthUsername,
 				Password: sourcePat,
@@ -187,7 +187,7 @@ func GetFetchOptions(refSpec string, sourceAuth Authentication) *git.FetchOption
 		return gitFetchOptions
 	}
 	gitFetchOptions := &git.FetchOptions{
-		RefSpecs: []config.RefSpec{config.RefSpec(refSpec)},
+		RefSpecs: []gitconfig.RefSpec{gitconfig.RefSpec(refSpec)},
 	}
 	return gitFetchOptions
 }
@@ -253,7 +253,7 @@ func MirrorRepository(messages chan MirrorStatus, source, destination string, so
 	cloneDuration := time.Since(cloneStart)
 	cloneEnd, pushStart := time.Now(), time.Now()
 
-	_, err = repository.CreateRemote(&config.RemoteConfig{
+	_, err = repository.CreateRemote(&gitconfig.RemoteConfig{
 		Name: "destination",
 		URLs: []string{destination},
 	})
@@ -277,7 +277,7 @@ func MirrorRepository(messages chan MirrorStatus, source, destination string, so
 		log.Debug("Pushing branch ", branch, " to ", destination)
 		err = repository.Push(&git.PushOptions{
 			RemoteName: "destination",
-			RefSpecs:   []config.RefSpec{config.RefSpec("+" + refBranchPrefix + branch + ":" + refBranchPrefix + branch)},
+			RefSpecs:   []gitconfig.RefSpec{gitconfig.RefSpec("+" + refBranchPrefix + branch + ":" + refBranchPrefix + branch)},
 			Auth:       destinationAuth, Force: true, Atomic: true})
 		ProcessError(err, "pushing branch "+branch+" to ", destination, &allErrors)
 	}
@@ -288,7 +288,7 @@ func MirrorRepository(messages chan MirrorStatus, source, destination string, so
 			log.Info("Removing branch ", branch, " from ", destination)
 			err = repository.Push(&git.PushOptions{
 				RemoteName: "destination",
-				RefSpecs:   []config.RefSpec{config.RefSpec(":" + refBranchPrefix + branch)},
+				RefSpecs:   []gitconfig.RefSpec{gitconfig.RefSpec(":" + refBranchPrefix + branch)},
 				Auth:       destinationAuth, Force: true, Atomic: true})
 			ProcessError(err, "removing branch "+branch+" from ", destination, &allErrors)
 		}
@@ -297,7 +297,7 @@ func MirrorRepository(messages chan MirrorStatus, source, destination string, so
 	log.Info("Pushing all tags from ", source, " to ", destination)
 	err = repository.Push(&git.PushOptions{
 		RemoteName: "destination",
-		RefSpecs:   []config.RefSpec{config.RefSpec("+" + refTagPrefix + "*:" + refTagPrefix + "*")},
+		RefSpecs:   []gitconfig.RefSpec{gitconfig.RefSpec("+" + refTagPrefix + "*:" + refTagPrefix + "*")},
 		Auth:       destinationAuth, Force: true, Atomic: true})
 	ProcessError(err, "pushing all tags to ", destination, &allErrors)
 
@@ -307,7 +307,7 @@ func MirrorRepository(messages chan MirrorStatus, source, destination string, so
 			log.Info("Removing tag ", tag, " from ", destination)
 			err := repository.Push(&git.PushOptions{
 				RemoteName: "destination",
-				RefSpecs:   []config.RefSpec{config.RefSpec(":" + refTagPrefix + tag)},
+				RefSpecs:   []gitconfig.RefSpec{gitconfig.RefSpec(":" + refTagPrefix + tag)},
 				Auth:       destinationAuth, Force: true, Atomic: true})
 			ProcessError(err, "removing tag "+tag+" from ", destination, &allErrors)
 		}
