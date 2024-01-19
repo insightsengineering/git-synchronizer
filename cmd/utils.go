@@ -33,9 +33,3 @@ func stringInSlice(a string, list []string) bool {
 	}
 	return false
 }
-
-func combineSlices(slice []string, allSlices *[]string) {
-	for _, s := range slice {
-		*allSlices = append(*allSlices, s)
-	}
-}

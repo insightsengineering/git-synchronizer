@@ -336,7 +336,7 @@ results_receiver_loop:
 		case msg := <-messages:
 			receivedResults++
 			log.Info("Finished mirroring ", receivedResults, " out of ", len(repos), " repositories.")
-			combineSlices(msg.Errors, &allErrors)
+			allErrors = append(allErrors, msg.Errors...)
 			if lastCloneEnd.Before(msg.LastCloneEnd) {
 				lastCloneEnd = msg.LastCloneEnd
 			}
