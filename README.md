@@ -2,7 +2,9 @@
 
 [![build](https://github.com/insightsengineering/git-synchronizer/actions/workflows/test.yml/badge.svg)](https://github.com/insightsengineering/git-synchronizer/actions/workflows/test.yml)
 
-`git-synchronizer` allows you to mirror a collection of `git` repositories from one location to another. For each source repository, you can set a destination repository to which the source should be mirrored (see example [configuration file](#configuration-file)).
+`git-synchronizer` allows you to mirror a collection of `git` repositories from one location to another.
+For each source repository, you can set a destination repository to which the source should be mirrored (see example [configuration file](#configuration-file)).
+Synchronization between all source-destination repository pairs in performed concurrently.
 
 `git-synchronizer` will:
 * push all branches and tags from source to destination repository,
@@ -10,7 +12,8 @@
 
 ## Installing
 
-Simply download the project for your distribution from the [releases](https://github.com/insightsengineering/git-synchronizer/releases) page. `git-synchronizer` is distributed as a single binary file and does not require any additional system requirements.
+Simply download the project for your distribution from the [releases](https://github.com/insightsengineering/git-synchronizer/releases) page.
+`git-synchronizer` is distributed as a single binary file and does not require any additional system requirements.
 
 ## Usage
 
@@ -35,12 +38,14 @@ defaults:
   source:
     auth:
       method: token
-      # Name of environment variable storing the Personal Access Token with permissions to read source repositories.
+      # Name of environment variable storing the Personal Access Token
+      # with permissions to read source repositories.
       token_name: GITHUB_TOKEN
   destination:
     auth:
       method: token
-      # Name of environment variable storing the Personal Access Token with permissions to push to destination repositories.
+      # Name of environment variable storing the Personal Access Token
+      # with permissions to push to destination repositories.
       token_name: GITLAB_TOKEN
 
 # List of repository pairs to be synchronized.
@@ -91,7 +96,8 @@ This project is built with the [Go programming language](https://go.dev/).
 
 ### Development Environment
 
-It is recommended to use Go 1.21+ for developing this project. This project uses a pre-commit configuration and it is recommended to [install and use pre-commit](https://pre-commit.com/#install) when you are developing this project.
+It is recommended to use Go 1.21+ for developing this project.
+This project uses a pre-commit configuration and it is recommended to [install and use pre-commit](https://pre-commit.com/#install) when you are developing this project.
 
 ### Common Commands
 
