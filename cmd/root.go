@@ -52,6 +52,8 @@ var inputRepositories []RepositoryPair
 
 var defaultSettings RepositoryPair
 
+var ignoredErrors []string
+
 var localTempDirectory string
 
 var log = logrus.New()
@@ -98,8 +100,11 @@ func newRootCommand() {
 			checkError(err)
 			defaultSettingsJSON, err := json.MarshalIndent(defaultSettings, "", "  ")
 			checkError(err)
+			ignoredErrorsJSON, err := json.MarshalIndent(ignoredErrors, "", "  ")
+			checkError(err)
 			log.Trace("inputRepositories = ", string(inputRepositoriesJSON))
 			log.Trace("defaultSettings = ", string(defaultSettingsJSON))
+			fmt.Println("ignoredErrors = " + string(ignoredErrorsJSON))
 
 			if runtime.GOOS == "windows" {
 				localTempDirectory = os.Getenv("TMP") + workingDirectory
@@ -189,5 +194,8 @@ func initializeConfig() {
 	checkError(err)
 	// Read default settings from configuration file.
 	err = viper.UnmarshalKey("defaults", &defaultSettings)
+	checkError(err)
+	// Read ignored error messages.
+	err = viper.UnmarshalKey("ignored_errors", &ignoredErrors)
 	checkError(err)
 }

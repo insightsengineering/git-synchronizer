@@ -114,10 +114,22 @@ func GetBranchesAndTagsFromRemote(repository *git.Repository, remoteName string,
 }
 
 // ProcessError formats err and appends it to allErrors.
+// Checks whether the error contains a string which shouldn't cause git-synchronizer to exit with code 1.
 func ProcessError(err error, activity string, url string, allErrors *[]string) {
 	var e string
 	if err != nil && err != git.NoErrAlreadyUpToDate {
-		e = "Error while " + activity + url + ": " + err.Error()
+		isIgnored := false
+		for _, ignoredError := range ignoredErrors {
+			if strings.Contains(err.Error(), ignoredError) {
+				isIgnored = true
+				break
+			}
+		}
+		if !isIgnored {
+			e = "Error while " + activity + url + ": " + err.Error()
+		} else {
+			log.Warn("Error while " + activity + url + ": " + err.Error())
+		}
 	}
 	if e != "" {
 		log.Error(e)
