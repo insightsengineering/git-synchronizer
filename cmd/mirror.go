@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	backoff "github.com/cenkalti/backoff/v4"
 	git "github.com/go-git/go-git/v5"
 	gitconfig "github.com/go-git/go-git/v5/config"
 	gitplumbing "github.com/go-git/go-git/v5/plumbing"
@@ -87,6 +88,16 @@ func ValidateRepositories(repositories []RepositoryPair) {
 	}
 }
 
+func ListRemote(remote *git.Remote, listOptions *git.ListOptions) ([]*gitplumbing.Reference, error) {
+	refList, err := remote.List(listOptions)
+	if err == gittransport.ErrAuthenticationRequired {
+		return nil, backoff.Permanent(err)
+	} else if err != nil {
+		log.Warn("Retrying listing remote...")
+	}
+	return refList, err
+}
+
 // GetBranchesAndTagsFromRemote returns list of branches and tags present in remoteName of repository.
 func GetBranchesAndTagsFromRemote(repository *git.Repository, remoteName string, listOptions *git.ListOptions) ([]string, []string, error) {
 	var branchList []string
@@ -98,16 +109,12 @@ func GetBranchesAndTagsFromRemote(repository *git.Repository, remoteName string,
 		return branchList, tagList, err
 	}
 
-	var refList []*gitplumbing.Reference
-	for i := 1; i <= maxRetries; i++ {
-		refList, err = remote.List(listOptions)
-		if err == nil || err == gittransport.ErrAuthenticationRequired {
-			break
-		}
-		if i < maxRetries {
-			log.Warn("Retrying listing remote refs...")
-		}
-	}
+	listRemoteBackoff := backoff.NewExponentialBackOff()
+	listRemoteBackoff.MaxElapsedTime = time.Minute
+	refList, err := backoff.RetryWithData(
+		func() ([]*gitplumbing.Reference, error) { return ListRemote(remote, listOptions) },
+		listRemoteBackoff,
+	)
 	if err != nil {
 		return branchList, tagList, err
 	}
@@ -221,54 +228,43 @@ func GetDestinationAuth(destAuth Authentication) *githttp.BasicAuth {
 	return destinationAuth
 }
 
-// GitPlainClone clones git repository and retries the process in case of failure.
+// GitPlainClone clones git repository and is retried in case of error.
 func GitPlainClone(gitDirectory string, cloneOptions *git.CloneOptions) (*git.Repository, error) {
-	var repository *git.Repository
-	var err error
-	for i := 1; i <= maxRetries; i++ {
-		repository, err = git.PlainClone(gitDirectory, false, cloneOptions)
-		if err == nil || err == gittransport.ErrAuthenticationRequired {
-			break
-		}
-		if i < maxRetries {
-			log.Warn("Retrying repository cloning...")
-		}
+	repository, err := git.PlainClone(gitDirectory, false, cloneOptions)
+	if err == gittransport.ErrAuthenticationRequired {
+		// Terminate backoff.
+		return nil, backoff.Permanent(err)
+	} else if err != nil {
+		log.Warn("Retrying cloning repository...")
 	}
 	return repository, err
 }
 
-// GitFetchBranches fetches all branches and retries the process in case of failure.
+// GitFetchBranches fetches all branches and is retried in case of error.
 func GitFetchBranches(sourceRemote *git.Remote, sourceAuthentication Authentication) error {
 	gitFetchOptions := GetFetchOptions("refs/heads/*:refs/heads/*", sourceAuthentication)
-	var err error
-	for i := 1; i <= maxRetries; i++ {
-		err = sourceRemote.Fetch(gitFetchOptions)
-		if err == nil || err == gittransport.ErrAuthenticationRequired {
-			break
-		}
-		if i < maxRetries {
-			log.Warn("Retrying fetching branches...")
-		}
+	err := sourceRemote.Fetch(gitFetchOptions)
+	if err == gittransport.ErrAuthenticationRequired {
+		// Terminate backoff.
+		return backoff.Permanent(err)
+	} else if err != nil {
+		log.Warn("Retrying fetching branches...")
 	}
 	return err
 }
 
-// PushRefs pushes refs defined in refSpecString to destination remote and retries the process
-// in case of failure.
+// PushRefs pushes refs defined in refSpecString to destination remote and is retried in case of error.
 func PushRefs(repository *git.Repository, auth *githttp.BasicAuth, refSpecString string) error {
-	var err error
-	for i := 1; i <= maxRetries; i++ {
-		err = repository.Push(&git.PushOptions{
-			RemoteName: "destination",
-			RefSpecs:   []gitconfig.RefSpec{gitconfig.RefSpec(refSpecString)},
-			Auth:       auth, Force: true, Atomic: true},
-		)
-		if err == nil || err == gittransport.ErrAuthenticationRequired || err == git.NoErrAlreadyUpToDate {
-			break
-		}
-		if i < maxRetries {
-			log.Warn("Retrying pushing refs...")
-		}
+	err := repository.Push(&git.PushOptions{
+		RemoteName: "destination",
+		RefSpecs:   []gitconfig.RefSpec{gitconfig.RefSpec(refSpecString)},
+		Auth:       auth, Force: true, Atomic: true},
+	)
+	if err == gittransport.ErrAuthenticationRequired || err == git.NoErrAlreadyUpToDate {
+		// Terminate backoff.
+		return backoff.Permanent(err)
+	} else if err != nil {
+		log.Warn("Retrying pushing refs...")
 	}
 	return err
 }
@@ -283,12 +279,19 @@ func MirrorRepository(messages chan MirrorStatus, source, destination string, so
 	defer os.RemoveAll(gitDirectory)
 	var allErrors []string
 	gitCloneOptions := GetCloneOptions(source, sourceAuthentication)
-	repository, err := GitPlainClone(gitDirectory, gitCloneOptions)
+
+	cloneBackoff := backoff.NewExponentialBackOff()
+	cloneBackoff.MaxElapsedTime = time.Minute
+	repository, err := backoff.RetryWithData(
+		func() (*git.Repository, error) { return GitPlainClone(gitDirectory, gitCloneOptions) },
+		cloneBackoff,
+	)
 	if err != nil {
 		ProcessError(err, "cloning repository from ", source, &allErrors)
 		messages <- MirrorStatus{allErrors, time.Now(), 0, 0}
 		return
 	}
+
 	gitListOptions := GetListOptions(sourceAuthentication)
 	sourceBranchList, sourceTagList, err := GetBranchesAndTagsFromRemote(repository, "origin", gitListOptions)
 	if err != nil {
@@ -307,7 +310,12 @@ func MirrorRepository(messages chan MirrorStatus, source, destination string, so
 		return
 	}
 
-	err = GitFetchBranches(sourceRemote, sourceAuthentication)
+	fetchBranchesBackoff := backoff.NewExponentialBackOff()
+	fetchBranchesBackoff.MaxElapsedTime = time.Minute
+	err = backoff.Retry(
+		func() error { return GitFetchBranches(sourceRemote, sourceAuthentication) },
+		fetchBranchesBackoff,
+	)
 	if err != nil {
 		ProcessError(err, "fetching branches from ", source, &allErrors)
 		messages <- MirrorStatus{allErrors, time.Now(), 0, 0}
@@ -339,7 +347,14 @@ func MirrorRepository(messages chan MirrorStatus, source, destination string, so
 	log.Info("Pushing all branches from ", source, " to ", destination)
 	for _, branch := range sourceBranchList {
 		log.Debug("Pushing branch ", branch, " to ", destination)
-		err = PushRefs(repository, destinationAuth, "+"+refBranchPrefix+branch+":"+refBranchPrefix+branch)
+		pushBranchesBackoff := backoff.NewExponentialBackOff()
+		pushBranchesBackoff.MaxElapsedTime = time.Minute
+		err = backoff.Retry(
+			func() error {
+				return PushRefs(repository, destinationAuth, "+"+refBranchPrefix+branch+":"+refBranchPrefix+branch)
+			},
+			pushBranchesBackoff,
+		)
 		ProcessError(err, "pushing branch "+branch+" to ", destination, &allErrors)
 	}
 
@@ -347,20 +362,35 @@ func MirrorRepository(messages chan MirrorStatus, source, destination string, so
 	for _, branch := range destinationBranchList {
 		if !stringInSlice(branch, sourceBranchList) {
 			log.Info("Removing branch ", branch, " from ", destination)
-			err = PushRefs(repository, destinationAuth, ":"+refBranchPrefix+branch)
+			removeBranchesBackoff := backoff.NewExponentialBackOff()
+			removeBranchesBackoff.MaxElapsedTime = time.Minute
+			err = backoff.Retry(
+				func() error { return PushRefs(repository, destinationAuth, ":"+refBranchPrefix+branch) },
+				removeBranchesBackoff,
+			)
 			ProcessError(err, "removing branch "+branch+" from ", destination, &allErrors)
 		}
 	}
 
 	log.Info("Pushing all tags from ", source, " to ", destination)
-	err = PushRefs(repository, destinationAuth, "+"+refTagPrefix+"*:"+refTagPrefix+"*")
+	pushTagsBackoff := backoff.NewExponentialBackOff()
+	pushTagsBackoff.MaxElapsedTime = time.Minute
+	err = backoff.Retry(
+		func() error { return PushRefs(repository, destinationAuth, "+"+refTagPrefix+"*:"+refTagPrefix+"*") },
+		pushTagsBackoff,
+	)
 	ProcessError(err, "pushing all tags to ", destination, &allErrors)
 
 	// Remove any tags not present in the source repository anymore.
 	for _, tag := range destinationTagList {
 		if !stringInSlice(tag, sourceTagList) {
 			log.Info("Removing tag ", tag, " from ", destination)
-			err = PushRefs(repository, destinationAuth, ":"+refTagPrefix+tag)
+			removeTagsBackoff := backoff.NewExponentialBackOff()
+			removeTagsBackoff.MaxElapsedTime = time.Minute
+			err = backoff.Retry(
+				func() error { return PushRefs(repository, destinationAuth, ":"+refTagPrefix+tag) },
+				removeTagsBackoff,
+			)
 			ProcessError(err, "removing tag "+tag+" from ", destination, &allErrors)
 		}
 	}
