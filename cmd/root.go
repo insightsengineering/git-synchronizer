@@ -49,7 +49,6 @@ type Authentication struct {
 
 // Repository list provided in YAML configuration file.
 var inputRepositories []RepositoryPair
-
 var defaultSettings RepositoryPair
 
 var localTempDirectory string
