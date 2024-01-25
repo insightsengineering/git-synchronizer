@@ -31,7 +31,6 @@ import (
 var cfgFile string
 var logLevel string
 var workingDirectory string
-var maxRetries int
 
 type RepositoryPair struct {
 	Source      Repository `mapstructure:"source"`
@@ -122,10 +121,6 @@ func newRootCommand() {
 		"Logging level (trace, debug, info, warn, error). ")
 	rootCmd.PersistentFlags().StringVarP(&workingDirectory, "workingDirectory", "w", "/tmp/git-synchronizer",
 		"Directory where synchronized repositories will be cloned.")
-	rootCmd.PersistentFlags().IntVarP(&maxRetries, "maxRetries", "r", 3,
-		"Maximum number of retries in case a failure happens while: cloning source repository, "+
-			"getting branches and tags from remote, fetching branches from source repository, "+
-			"or pushing refs to destination repository.")
 
 	// Add version command.
 	rootCmd.AddCommand(extension.NewVersionCobraCmd())
