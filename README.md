@@ -74,13 +74,6 @@ repositories:
       auth:
         method: token
         token_name: GITLAB_TOKEN_EXTRA
-
-# (Optional) if an error containing any of these strings occurs, it will only be logged
-# but will not cause the git-synchronizer execution to return exit code 1.
-ignored_errors:
-  - "unexpected EOF"
-  - "unexpected client error: unexpected requesting"
-  - "context deadline exceeded"
 ```
 
 ## Environment variables

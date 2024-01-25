@@ -24,6 +24,8 @@ import (
 
 	git "github.com/go-git/go-git/v5"
 	gitconfig "github.com/go-git/go-git/v5/config"
+	gitplumbing "github.com/go-git/go-git/v5/plumbing"
+	gittransport "github.com/go-git/go-git/v5/plumbing/transport"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 )
 
@@ -89,11 +91,23 @@ func ValidateRepositories(repositories []RepositoryPair) {
 func GetBranchesAndTagsFromRemote(repository *git.Repository, remoteName string, listOptions *git.ListOptions) ([]string, []string, error) {
 	var branchList []string
 	var tagList []string
+	var err error
+
 	remote, err := repository.Remote(remoteName)
 	if err != nil {
 		return branchList, tagList, err
 	}
-	refList, err := remote.List(listOptions)
+
+	var refList []*gitplumbing.Reference
+	for i := 1; i <= maxRetries; i++ {
+		refList, err = remote.List(listOptions)
+		if err == nil || err == gittransport.ErrAuthenticationRequired {
+			break
+		}
+		if i < maxRetries {
+			log.Warn("Retrying listing remote refs...")
+		}
+	}
 	if err != nil {
 		return branchList, tagList, err
 	}
@@ -118,18 +132,7 @@ func GetBranchesAndTagsFromRemote(repository *git.Repository, remoteName string,
 func ProcessError(err error, activity string, url string, allErrors *[]string) {
 	var e string
 	if err != nil && err != git.NoErrAlreadyUpToDate {
-		isIgnored := false
-		for _, ignoredError := range ignoredErrors {
-			if strings.Contains(err.Error(), ignoredError) {
-				isIgnored = true
-				break
-			}
-		}
-		if !isIgnored {
-			e = "Error while " + activity + url + ": " + err.Error()
-		} else {
-			log.Warn("Error while " + activity + url + ": " + err.Error())
-		}
+		e = "Error while " + activity + url + ": " + err.Error()
 	}
 	if e != "" {
 		log.Error(e)
@@ -219,6 +222,54 @@ func GetDestinationAuth(destAuth Authentication) *githttp.BasicAuth {
 	return destinationAuth
 }
 
+func GitPlainClone(gitDirectory string, cloneOptions *git.CloneOptions) (*git.Repository, error) {
+	var repository *git.Repository
+	var err error
+	for i := 1; i <= maxRetries; i++ {
+		repository, err = git.PlainClone(gitDirectory, false, cloneOptions)
+		if err == nil || err == gittransport.ErrAuthenticationRequired {
+			break
+		}
+		if i < maxRetries {
+			log.Warn("Retrying repository cloning...")
+		}
+	}
+	return repository, err
+}
+
+func GitFetchBranches(sourceRemote *git.Remote, sourceAuthentication Authentication) error {
+	gitFetchOptions := GetFetchOptions("refs/heads/*:refs/heads/*", sourceAuthentication)
+	var err error
+	for i := 1; i <= maxRetries; i++ {
+		err = sourceRemote.Fetch(gitFetchOptions)
+		if err == nil || err == gittransport.ErrAuthenticationRequired {
+			break
+		}
+		if i < maxRetries {
+			log.Warn("Retrying fetching branches...")
+		}
+	}
+	return err
+}
+
+func PushRefs(repository *git.Repository, auth *githttp.BasicAuth, refSpecString string) error {
+	var err error
+	for i := 1; i <= maxRetries; i++ {
+		err = repository.Push(&git.PushOptions{
+			RemoteName: "destination",
+			RefSpecs:   []gitconfig.RefSpec{gitconfig.RefSpec(refSpecString)},
+			Auth:       auth, Force: true, Atomic: true},
+		)
+		if err == nil || err == gittransport.ErrAuthenticationRequired || err == git.NoErrAlreadyUpToDate {
+			break
+		}
+		if i < maxRetries {
+			log.Warn("Retrying pushing refs...")
+		}
+	}
+	return err
+}
+
 // MirrorRepository mirrors branches and tags from source to destination. Tags and branches
 // no longer present in source are removed from destination.
 func MirrorRepository(messages chan MirrorStatus, source, destination string, sourceAuthentication, destinationAuthentication Authentication) {
@@ -229,13 +280,12 @@ func MirrorRepository(messages chan MirrorStatus, source, destination string, so
 	defer os.RemoveAll(gitDirectory)
 	var allErrors []string
 	gitCloneOptions := GetCloneOptions(source, sourceAuthentication)
-	repository, err := git.PlainClone(gitDirectory, false, gitCloneOptions)
+	repository, err := GitPlainClone(gitDirectory, gitCloneOptions)
 	if err != nil {
 		ProcessError(err, "cloning repository from ", source, &allErrors)
 		messages <- MirrorStatus{allErrors, time.Now(), 0, 0}
 		return
 	}
-
 	gitListOptions := GetListOptions(sourceAuthentication)
 	sourceBranchList, sourceTagList, err := GetBranchesAndTagsFromRemote(repository, "origin", gitListOptions)
 	if err != nil {
@@ -254,8 +304,7 @@ func MirrorRepository(messages chan MirrorStatus, source, destination string, so
 		return
 	}
 
-	gitFetchOptions := GetFetchOptions("refs/heads/*:refs/heads/*", sourceAuthentication)
-	err = sourceRemote.Fetch(gitFetchOptions)
+	err = GitFetchBranches(sourceRemote, sourceAuthentication)
 	if err != nil {
 		ProcessError(err, "fetching branches from ", source, &allErrors)
 		messages <- MirrorStatus{allErrors, time.Now(), 0, 0}
@@ -287,10 +336,7 @@ func MirrorRepository(messages chan MirrorStatus, source, destination string, so
 	log.Info("Pushing all branches from ", source, " to ", destination)
 	for _, branch := range sourceBranchList {
 		log.Debug("Pushing branch ", branch, " to ", destination)
-		err = repository.Push(&git.PushOptions{
-			RemoteName: "destination",
-			RefSpecs:   []gitconfig.RefSpec{gitconfig.RefSpec("+" + refBranchPrefix + branch + ":" + refBranchPrefix + branch)},
-			Auth:       destinationAuth, Force: true, Atomic: true})
+		err = PushRefs(repository, destinationAuth, "+"+refBranchPrefix+branch+":"+refBranchPrefix+branch)
 		ProcessError(err, "pushing branch "+branch+" to ", destination, &allErrors)
 	}
 
@@ -298,29 +344,20 @@ func MirrorRepository(messages chan MirrorStatus, source, destination string, so
 	for _, branch := range destinationBranchList {
 		if !stringInSlice(branch, sourceBranchList) {
 			log.Info("Removing branch ", branch, " from ", destination)
-			err = repository.Push(&git.PushOptions{
-				RemoteName: "destination",
-				RefSpecs:   []gitconfig.RefSpec{gitconfig.RefSpec(":" + refBranchPrefix + branch)},
-				Auth:       destinationAuth, Force: true, Atomic: true})
+			err = PushRefs(repository, destinationAuth, ":"+refBranchPrefix+branch)
 			ProcessError(err, "removing branch "+branch+" from ", destination, &allErrors)
 		}
 	}
 
 	log.Info("Pushing all tags from ", source, " to ", destination)
-	err = repository.Push(&git.PushOptions{
-		RemoteName: "destination",
-		RefSpecs:   []gitconfig.RefSpec{gitconfig.RefSpec("+" + refTagPrefix + "*:" + refTagPrefix + "*")},
-		Auth:       destinationAuth, Force: true, Atomic: true})
+	err = PushRefs(repository, destinationAuth, "+"+refTagPrefix+"*:"+refTagPrefix+"*")
 	ProcessError(err, "pushing all tags to ", destination, &allErrors)
 
 	// Remove any tags not present in the source repository anymore.
 	for _, tag := range destinationTagList {
 		if !stringInSlice(tag, sourceTagList) {
 			log.Info("Removing tag ", tag, " from ", destination)
-			err := repository.Push(&git.PushOptions{
-				RemoteName: "destination",
-				RefSpecs:   []gitconfig.RefSpec{gitconfig.RefSpec(":" + refTagPrefix + tag)},
-				Auth:       destinationAuth, Force: true, Atomic: true})
+			err = PushRefs(repository, destinationAuth, ":"+refTagPrefix+tag)
 			ProcessError(err, "removing tag "+tag+" from ", destination, &allErrors)
 		}
 	}

@@ -31,6 +31,7 @@ import (
 var cfgFile string
 var logLevel string
 var workingDirectory string
+var maxRetries int
 
 type RepositoryPair struct {
 	Source      Repository `mapstructure:"source"`
@@ -49,10 +50,7 @@ type Authentication struct {
 
 // Repository list provided in YAML configuration file.
 var inputRepositories []RepositoryPair
-
 var defaultSettings RepositoryPair
-
-var ignoredErrors []string
 
 var localTempDirectory string
 
@@ -100,11 +98,8 @@ func newRootCommand() {
 			checkError(err)
 			defaultSettingsJSON, err := json.MarshalIndent(defaultSettings, "", "  ")
 			checkError(err)
-			ignoredErrorsJSON, err := json.MarshalIndent(ignoredErrors, "", "  ")
-			checkError(err)
 			log.Trace("inputRepositories = ", string(inputRepositoriesJSON))
 			log.Trace("defaultSettings = ", string(defaultSettingsJSON))
-			fmt.Println("ignoredErrors = " + string(ignoredErrorsJSON))
 
 			if runtime.GOOS == "windows" {
 				localTempDirectory = os.Getenv("TMP") + workingDirectory
@@ -127,6 +122,10 @@ func newRootCommand() {
 		"Logging level (trace, debug, info, warn, error). ")
 	rootCmd.PersistentFlags().StringVarP(&workingDirectory, "workingDirectory", "w", "/tmp/git-synchronizer",
 		"Directory where synchronized repositories will be cloned.")
+	rootCmd.PersistentFlags().IntVarP(&maxRetries, "maxRetries", "r", 3,
+		"Maximum number of retires in case a failure happens while: cloning source repository,"+
+			"getting branches and tags from remote, fetching branches from source repository,"+
+			"or pushing refs to destination repository.")
 
 	// Add version command.
 	rootCmd.AddCommand(extension.NewVersionCobraCmd())
@@ -194,8 +193,5 @@ func initializeConfig() {
 	checkError(err)
 	// Read default settings from configuration file.
 	err = viper.UnmarshalKey("defaults", &defaultSettings)
-	checkError(err)
-	// Read ignored error messages.
-	err = viper.UnmarshalKey("ignored_errors", &ignoredErrors)
 	checkError(err)
 }

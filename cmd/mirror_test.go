@@ -17,7 +17,6 @@ limitations under the License.
 package cmd
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -63,22 +62,4 @@ func Test_SetRepositoryAuth(t *testing.T) {
 	assert.Equal(t, repositories[1].Source.Auth.TokenName, "CUSTOM_TOKEN_1")
 	assert.Equal(t, repositories[1].Destination.Auth.Method, "token")
 	assert.Equal(t, repositories[1].Destination.Auth.TokenName, "CUSTOM_TOKEN_2")
-}
-
-func Test_ProcessError(t *testing.T) {
-	ignoredErrors = []string{"ignored error 1", "ignored error 2"}
-	var allErrors []string
-	err1 := errors.New("ignored warning 1")
-	err2 := errors.New("1 ignored error 3")
-	err3 := errors.New("1 ignored error 1 2 3")
-	err4 := errors.New("2 ignored error 2 3 4")
-	err5 := errors.New("3 ignored error 3 4 5")
-	ProcessError(err1, "activity ", "https://example.com", &allErrors)
-	ProcessError(err2, "activity ", "https://example.com", &allErrors)
-	ProcessError(err3, "activity ", "https://example.com", &allErrors)
-	ProcessError(err4, "activity ", "https://example.com", &allErrors)
-	ProcessError(err5, "activity ", "https://example.com", &allErrors)
-	assert.Equal(t, allErrors[0], "Error while activity https://example.com: ignored warning 1")
-	assert.Equal(t, allErrors[1], "Error while activity https://example.com: 1 ignored error 3")
-	assert.Equal(t, allErrors[2], "Error while activity https://example.com: 3 ignored error 3 4 5")
 }
