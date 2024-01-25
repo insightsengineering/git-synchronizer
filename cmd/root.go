@@ -123,7 +123,7 @@ func newRootCommand() {
 	rootCmd.PersistentFlags().StringVarP(&workingDirectory, "workingDirectory", "w", "/tmp/git-synchronizer",
 		"Directory where synchronized repositories will be cloned.")
 	rootCmd.PersistentFlags().IntVarP(&maxRetries, "maxRetries", "r", 3,
-		"Maximum number of retires in case a failure happens while: cloning source repository, "+
+		"Maximum number of retries in case a failure happens while: cloning source repository, "+
 			"getting branches and tags from remote, fetching branches from source repository, "+
 			"or pushing refs to destination repository.")
 
