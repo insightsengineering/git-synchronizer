@@ -128,7 +128,6 @@ func GetBranchesAndTagsFromRemote(repository *git.Repository, remoteName string,
 }
 
 // ProcessError formats err and appends it to allErrors.
-// Checks whether the error contains a string which shouldn't cause git-synchronizer to exit with code 1.
 func ProcessError(err error, activity string, url string, allErrors *[]string) {
 	var e string
 	if err != nil && err != git.NoErrAlreadyUpToDate {
@@ -222,6 +221,7 @@ func GetDestinationAuth(destAuth Authentication) *githttp.BasicAuth {
 	return destinationAuth
 }
 
+// GitPlainClone clones git repository and retries the process in case of failure.
 func GitPlainClone(gitDirectory string, cloneOptions *git.CloneOptions) (*git.Repository, error) {
 	var repository *git.Repository
 	var err error
@@ -237,6 +237,7 @@ func GitPlainClone(gitDirectory string, cloneOptions *git.CloneOptions) (*git.Re
 	return repository, err
 }
 
+// GitFetchBranches fetches all branches and retries the process in case of failure.
 func GitFetchBranches(sourceRemote *git.Remote, sourceAuthentication Authentication) error {
 	gitFetchOptions := GetFetchOptions("refs/heads/*:refs/heads/*", sourceAuthentication)
 	var err error
@@ -252,6 +253,8 @@ func GitFetchBranches(sourceRemote *git.Remote, sourceAuthentication Authenticat
 	return err
 }
 
+// PushRefs pushes refs defined in refSpecString to destination remote and retries the process
+// in case of failure.
 func PushRefs(repository *git.Repository, auth *githttp.BasicAuth, refSpecString string) error {
 	var err error
 	for i := 1; i <= maxRetries; i++ {
