@@ -281,7 +281,7 @@ func MirrorRepository(messages chan MirrorStatus, source, destination string, so
 	gitCloneOptions := GetCloneOptions(source, sourceAuthentication)
 
 	cloneBackoff := backoff.NewExponentialBackOff()
-	cloneBackoff.MaxElapsedTime = 5 * time.Minute
+	cloneBackoff.MaxElapsedTime = 2 * time.Minute
 	repository, err := backoff.RetryWithData(
 		func() (*git.Repository, error) { return GitPlainClone(gitDirectory, gitCloneOptions) },
 		cloneBackoff,
@@ -348,7 +348,7 @@ func MirrorRepository(messages chan MirrorStatus, source, destination string, so
 	for _, branch := range sourceBranchList {
 		log.Debug("Pushing branch ", branch, " to ", destination)
 		pushBranchesBackoff := backoff.NewExponentialBackOff()
-		pushBranchesBackoff.MaxElapsedTime = 3 * time.Minute
+		pushBranchesBackoff.MaxElapsedTime = 2 * time.Minute
 		err = backoff.Retry(
 			func() error {
 				return PushRefs(repository, destinationAuth, "+"+refBranchPrefix+branch+":"+refBranchPrefix+branch)
