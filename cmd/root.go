@@ -86,10 +86,10 @@ func newRootCommand() {
 		Use:   "git-synchronizer",
 		Short: "A tool to synchronize git repositories.",
 		Long:  `A tool to synchronize git repositories from one git server to another.`,
-		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		PersistentPreRun: func(_ *cobra.Command, _ []string) {
 			initializeConfig()
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			setLogLevel()
 
 			fmt.Println(`config = "` + cfgFile + `"`)
