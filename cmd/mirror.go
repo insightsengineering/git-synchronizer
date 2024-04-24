@@ -244,16 +244,19 @@ func GitPlainClone(gitDirectory string, cloneOptions *git.CloneOptions, reposito
 func GitFetchBranches(sourceRemote *git.Remote, sourceAuthentication Authentication, repositoryName string) error {
 	gitFetchOptions := GetFetchOptions("refs/heads/*:refs/heads/*", sourceAuthentication)
 	err := sourceRemote.Fetch(gitFetchOptions)
-	if err == gittransport.ErrAuthenticationRequired {
+	switch err {
+	case gittransport.ErrAuthenticationRequired:
+		log.Error("[", repositoryName, "] Authentication required.")
 		return backoff.Permanent(err)
-	} else if err == git.NoErrAlreadyUpToDate {
+	case git.NoErrAlreadyUpToDate:
 		// Terminate backoff with no error in case the branch is already up-to-date.
 		// This can occur if source or destination repository has only one branch.
+		log.Info("[", repositoryName, "] Repository up-to-date.")
 		return nil
-	} else if err != nil {
+	default:
 		log.Warn("[", repositoryName, "] Retrying fetching branches because the following error occurred: ", err)
+		return err
 	}
-	return err
 }
 
 // PushRefs pushes refs defined in refSpecString to destination remote and is retried in case of error.
@@ -379,7 +382,9 @@ func MirrorRepository(messages chan MirrorStatus, source, destination string, so
 	pushTagsBackoff := backoff.NewExponentialBackOff()
 	pushTagsBackoff.MaxElapsedTime = time.Minute
 	err = backoff.Retry(
-		func() error { return PushRefs(repository, destinationAuth, "+"+refTagPrefix+"*:"+refTagPrefix+"*", destination) },
+		func() error {
+			return PushRefs(repository, destinationAuth, "+"+refTagPrefix+"*:"+refTagPrefix+"*", destination)
+		},
 		pushTagsBackoff,
 	)
 	ProcessError(err, "pushing all tags to ", destination, &allErrors)
