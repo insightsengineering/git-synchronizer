@@ -254,7 +254,9 @@ func GitFetchBranches(sourceRemote *git.Remote, sourceAuthentication Authenticat
 		log.Info("[", repositoryName, "] Repository up-to-date.")
 		return nil
 	default:
-		log.Warn("[", repositoryName, "] Retrying fetching branches because the following error occurred: ", err)
+		if err != nil {
+			log.Warn("[", repositoryName, "] Retrying fetching branches because the following error occurred: ", err)
+		}
 		return err
 	}
 }
