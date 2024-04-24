@@ -244,8 +244,9 @@ func GitPlainClone(gitDirectory string, cloneOptions *git.CloneOptions, reposito
 func GitFetchBranches(sourceRemote *git.Remote, sourceAuthentication Authentication, repositoryName string) error {
 	gitFetchOptions := GetFetchOptions("refs/heads/*:refs/heads/*", sourceAuthentication)
 	err := sourceRemote.Fetch(gitFetchOptions)
-	if err == gittransport.ErrAuthenticationRequired {
-		// Terminate backoff.
+	if err == gittransport.ErrAuthenticationRequired || git.NoErrAlreadyUpToDate {
+		// Terminate backoff in case authentication is required or the branch is already up-to-date.
+		// The second case can occur if source or destination repository has only one branch.
 		return backoff.Permanent(err)
 	} else if err != nil {
 		log.Warn("[", repositoryName, "] Retrying fetching branches because the following error occurred: ", err)
