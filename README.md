@@ -15,6 +15,12 @@ Synchronization between all source-destination repository pairs in performed con
 Simply download the project for your distribution from the [releases](https://github.com/insightsengineering/git-synchronizer/releases) page.
 `git-synchronizer` is distributed as a single binary file and does not require any additional system requirements.
 
+Alternatively, if you have a Go environment, you can simply install `git-synchronizer` by running:
+
+```shell
+go install github.com/insightsengineering/git-synchronizer@latest
+```
+
 ## Usage
 
 `git-synchronizer` is a command line utility, so after installing the binary in your `PATH`, simply run the following command to view its capabilities:
