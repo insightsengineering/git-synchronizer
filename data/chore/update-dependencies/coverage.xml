@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE coverage SYSTEM "http://cobertura.sourceforge.net/xml/coverage-04.dtd">
-<coverage line-rate="0.040948275" branch-rate="0" version="" timestamp="1759226434201" lines-covered="19" lines-valid="464" branches-covered="0" branches-valid="0" complexity="0">
+<coverage line-rate="0.040598292" branch-rate="0" version="" timestamp="1759227387481" lines-covered="19" lines-valid="468" branches-covered="0" branches-valid="0" complexity="0">
   <sources>
     <source>/home/runner/work/git-synchronizer/git-synchronizer</source>
   </sources>
   <packages>
-    <package name="github.com/insightsengineering/git-synchronizer/cmd" line-rate="0.04121475" branch-rate="0" complexity="0">
+    <package name="github.com/insightsengineering/git-synchronizer/cmd" line-rate="0.040860213" branch-rate="0" complexity="0">
       <classes>
-        <class name="-" filename="cmd/mirror.go" line-rate="0.04464286" branch-rate="0" complexity="0">
+        <class name="-" filename="cmd/mirror.go" line-rate="0.04411765" branch-rate="0" complexity="0">
           <methods>
             <method name="SetRepositoryAuth" signature="" line-rate="1" branch-rate="0" complexity="0">
               <lines>
@@ -66,7 +66,6 @@
             </method>
             <method name="GetBranchesAndTagsFromRemote" signature="" line-rate="0" branch-rate="0" complexity="0">
               <lines>
-                <line number="102" hits="0"></line>
                 <line number="103" hits="0"></line>
                 <line number="104" hits="0"></line>
                 <line number="105" hits="0"></line>
@@ -75,14 +74,14 @@
                 <line number="108" hits="0"></line>
                 <line number="109" hits="0"></line>
                 <line number="110" hits="0"></line>
-                <line number="112" hits="0"></line>
+                <line number="111" hits="0"></line>
                 <line number="113" hits="0"></line>
                 <line number="114" hits="0"></line>
                 <line number="115" hits="0"></line>
-                <line number="118" hits="0"></line>
+                <line number="116" hits="0"></line>
                 <line number="119" hits="0"></line>
                 <line number="120" hits="0"></line>
-                <line number="122" hits="0"></line>
+                <line number="121" hits="0"></line>
                 <line number="123" hits="0"></line>
                 <line number="124" hits="0"></line>
                 <line number="125" hits="0"></line>
@@ -91,14 +90,14 @@
                 <line number="128" hits="0"></line>
                 <line number="129" hits="0"></line>
                 <line number="130" hits="0"></line>
-                <line number="132" hits="0"></line>
+                <line number="131" hits="0"></line>
                 <line number="133" hits="0"></line>
                 <line number="134" hits="0"></line>
+                <line number="135" hits="0"></line>
               </lines>
             </method>
             <method name="ProcessError" signature="" line-rate="0" branch-rate="0" complexity="0">
               <lines>
-                <line number="138" hits="0"></line>
                 <line number="139" hits="0"></line>
                 <line number="140" hits="0"></line>
                 <line number="141" hits="0"></line>
@@ -107,11 +106,11 @@
                 <line number="144" hits="0"></line>
                 <line number="145" hits="0"></line>
                 <line number="146" hits="0"></line>
+                <line number="147" hits="0"></line>
               </lines>
             </method>
             <method name="GetCloneOptions" signature="" line-rate="0" branch-rate="0" complexity="0">
               <lines>
-                <line number="150" hits="0"></line>
                 <line number="151" hits="0"></line>
                 <line number="152" hits="0"></line>
                 <line number="153" hits="0"></line>
@@ -130,11 +129,11 @@
                 <line number="166" hits="0"></line>
                 <line number="167" hits="0"></line>
                 <line number="168" hits="0"></line>
+                <line number="169" hits="0"></line>
               </lines>
             </method>
             <method name="GetListOptions" signature="" line-rate="0" branch-rate="0" complexity="0">
               <lines>
-                <line number="172" hits="0"></line>
                 <line number="173" hits="0"></line>
                 <line number="174" hits="0"></line>
                 <line number="175" hits="0"></line>
@@ -152,11 +151,11 @@
                 <line number="187" hits="0"></line>
                 <line number="188" hits="0"></line>
                 <line number="189" hits="0"></line>
+                <line number="190" hits="0"></line>
               </lines>
             </method>
             <method name="GetFetchOptions" signature="" line-rate="0" branch-rate="0" complexity="0">
               <lines>
-                <line number="193" hits="0"></line>
                 <line number="194" hits="0"></line>
                 <line number="195" hits="0"></line>
                 <line number="196" hits="0"></line>
@@ -177,11 +176,11 @@
                 <line number="211" hits="0"></line>
                 <line number="212" hits="0"></line>
                 <line number="213" hits="0"></line>
+                <line number="214" hits="0"></line>
               </lines>
             </method>
             <method name="GetDestinationAuth" signature="" line-rate="0" branch-rate="0" complexity="0">
               <lines>
-                <line number="217" hits="0"></line>
                 <line number="218" hits="0"></line>
                 <line number="219" hits="0"></line>
                 <line number="220" hits="0"></line>
@@ -193,12 +192,11 @@
                 <line number="226" hits="0"></line>
                 <line number="227" hits="0"></line>
                 <line number="228" hits="0"></line>
+                <line number="229" hits="0"></line>
               </lines>
             </method>
             <method name="GitPlainClone" signature="" line-rate="0" branch-rate="0" complexity="0">
               <lines>
-                <line number="232" hits="0"></line>
-                <line number="233" hits="0"></line>
                 <line number="234" hits="0"></line>
                 <line number="235" hits="0"></line>
                 <line number="236" hits="0"></line>
@@ -206,12 +204,12 @@
                 <line number="238" hits="0"></line>
                 <line number="239" hits="0"></line>
                 <line number="240" hits="0"></line>
+                <line number="241" hits="0"></line>
+                <line number="242" hits="0"></line>
               </lines>
             </method>
             <method name="GitFetchBranches" signature="" line-rate="0" branch-rate="0" complexity="0">
               <lines>
-                <line number="244" hits="0"></line>
-                <line number="245" hits="0"></line>
                 <line number="246" hits="0"></line>
                 <line number="247" hits="0"></line>
                 <line number="248" hits="0"></line>
@@ -227,12 +225,12 @@
                 <line number="258" hits="0"></line>
                 <line number="259" hits="0"></line>
                 <line number="260" hits="0"></line>
+                <line number="261" hits="0"></line>
+                <line number="262" hits="0"></line>
               </lines>
             </method>
             <method name="PushRefs" signature="" line-rate="0" branch-rate="0" complexity="0">
               <lines>
-                <line number="265" hits="0"></line>
-                <line number="266" hits="0"></line>
                 <line number="267" hits="0"></line>
                 <line number="268" hits="0"></line>
                 <line number="269" hits="0"></line>
@@ -244,13 +242,12 @@
                 <line number="275" hits="0"></line>
                 <line number="276" hits="0"></line>
                 <line number="277" hits="0"></line>
+                <line number="278" hits="0"></line>
+                <line number="279" hits="0"></line>
               </lines>
             </method>
             <method name="MirrorRepository" signature="" line-rate="0" branch-rate="0" complexity="0">
               <lines>
-                <line number="282" hits="0"></line>
-                <line number="283" hits="0"></line>
-                <line number="284" hits="0"></line>
                 <line number="285" hits="0"></line>
                 <line number="286" hits="0"></line>
                 <line number="287" hits="0"></line>
@@ -261,14 +258,14 @@
                 <line number="292" hits="0"></line>
                 <line number="293" hits="0"></line>
                 <line number="294" hits="0"></line>
+                <line number="295" hits="0"></line>
+                <line number="296" hits="0"></line>
                 <line number="297" hits="0"></line>
-                <line number="298" hits="0"></line>
-                <line number="299" hits="0"></line>
                 <line number="300" hits="0"></line>
                 <line number="301" hits="0"></line>
+                <line number="302" hits="0"></line>
                 <line number="303" hits="0"></line>
                 <line number="304" hits="0"></line>
-                <line number="305" hits="0"></line>
                 <line number="306" hits="0"></line>
                 <line number="307" hits="0"></line>
                 <line number="308" hits="0"></line>
@@ -283,18 +280,18 @@
                 <line number="317" hits="0"></line>
                 <line number="318" hits="0"></line>
                 <line number="319" hits="0"></line>
+                <line number="320" hits="0"></line>
                 <line number="321" hits="0"></line>
                 <line number="322" hits="0"></line>
-                <line number="323" hits="0"></line>
                 <line number="324" hits="0"></line>
+                <line number="325" hits="0"></line>
+                <line number="326" hits="0"></line>
                 <line number="327" hits="0"></line>
-                <line number="328" hits="0"></line>
-                <line number="329" hits="0"></line>
                 <line number="330" hits="0"></line>
                 <line number="331" hits="0"></line>
+                <line number="332" hits="0"></line>
                 <line number="333" hits="0"></line>
                 <line number="334" hits="0"></line>
-                <line number="335" hits="0"></line>
                 <line number="336" hits="0"></line>
                 <line number="337" hits="0"></line>
                 <line number="338" hits="0"></line>
@@ -304,9 +301,9 @@
                 <line number="342" hits="0"></line>
                 <line number="343" hits="0"></line>
                 <line number="344" hits="0"></line>
+                <line number="345" hits="0"></line>
                 <line number="346" hits="0"></line>
                 <line number="347" hits="0"></line>
-                <line number="348" hits="0"></line>
                 <line number="349" hits="0"></line>
                 <line number="350" hits="0"></line>
                 <line number="351" hits="0"></line>
@@ -322,46 +319,46 @@
                 <line number="361" hits="0"></line>
                 <line number="362" hits="0"></line>
                 <line number="363" hits="0"></line>
+                <line number="364" hits="0"></line>
+                <line number="365" hits="0"></line>
                 <line number="366" hits="0"></line>
+                <line number="367" hits="0"></line>
+                <line number="368" hits="0"></line>
+                <line number="369" hits="0"></line>
                 <line number="370" hits="0"></line>
-                <line number="371" hits="0"></line>
-                <line number="372" hits="0"></line>
                 <line number="373" hits="0"></line>
-                <line number="374" hits="0"></line>
-                <line number="375" hits="0"></line>
-                <line number="376" hits="0"></line>
+                <line number="377" hits="0"></line>
+                <line number="378" hits="0"></line>
                 <line number="379" hits="0"></line>
+                <line number="380" hits="0"></line>
+                <line number="381" hits="0"></line>
+                <line number="382" hits="0"></line>
                 <line number="383" hits="0"></line>
-                <line number="384" hits="0"></line>
-                <line number="385" hits="0"></line>
                 <line number="386" hits="0"></line>
-                <line number="387" hits="0"></line>
-                <line number="388" hits="0"></line>
-                <line number="389" hits="0"></line>
+                <line number="390" hits="0"></line>
+                <line number="391" hits="0"></line>
                 <line number="392" hits="0"></line>
                 <line number="393" hits="0"></line>
                 <line number="394" hits="0"></line>
                 <line number="395" hits="0"></line>
                 <line number="396" hits="0"></line>
-                <line number="397" hits="0"></line>
-                <line number="398" hits="0"></line>
                 <line number="399" hits="0"></line>
                 <line number="400" hits="0"></line>
                 <line number="401" hits="0"></line>
+                <line number="402" hits="0"></line>
+                <line number="403" hits="0"></line>
                 <line number="404" hits="0"></line>
+                <line number="405" hits="0"></line>
+                <line number="406" hits="0"></line>
                 <line number="407" hits="0"></line>
                 <line number="408" hits="0"></line>
+                <line number="411" hits="0"></line>
+                <line number="414" hits="0"></line>
+                <line number="415" hits="0"></line>
               </lines>
             </method>
             <method name="MirrorRepositories" signature="" line-rate="0" branch-rate="0" complexity="0">
               <lines>
-                <line number="413" hits="0"></line>
-                <line number="414" hits="0"></line>
-                <line number="415" hits="0"></line>
-                <line number="416" hits="0"></line>
-                <line number="417" hits="0"></line>
-                <line number="418" hits="0"></line>
-                <line number="419" hits="0"></line>
                 <line number="420" hits="0"></line>
                 <line number="421" hits="0"></line>
                 <line number="422" hits="0"></line>
@@ -384,21 +381,28 @@
                 <line number="439" hits="0"></line>
                 <line number="440" hits="0"></line>
                 <line number="441" hits="0"></line>
+                <line number="442" hits="0"></line>
                 <line number="443" hits="0"></line>
                 <line number="444" hits="0"></line>
+                <line number="445" hits="0"></line>
+                <line number="446" hits="0"></line>
                 <line number="447" hits="0"></line>
                 <line number="448" hits="0"></line>
-                <line number="449" hits="0"></line>
                 <line number="450" hits="0"></line>
                 <line number="451" hits="0"></line>
-                <line number="452" hits="0"></line>
-                <line number="453" hits="0"></line>
                 <line number="454" hits="0"></line>
                 <line number="455" hits="0"></line>
                 <line number="456" hits="0"></line>
                 <line number="457" hits="0"></line>
                 <line number="458" hits="0"></line>
                 <line number="459" hits="0"></line>
+                <line number="460" hits="0"></line>
+                <line number="461" hits="0"></line>
+                <line number="462" hits="0"></line>
+                <line number="463" hits="0"></line>
+                <line number="464" hits="0"></line>
+                <line number="465" hits="0"></line>
+                <line number="466" hits="0"></line>
               </lines>
             </method>
           </methods>
@@ -446,7 +450,6 @@
             <line number="96" hits="0"></line>
             <line number="97" hits="0"></line>
             <line number="98" hits="0"></line>
-            <line number="102" hits="0"></line>
             <line number="103" hits="0"></line>
             <line number="104" hits="0"></line>
             <line number="105" hits="0"></line>
@@ -455,14 +458,14 @@
             <line number="108" hits="0"></line>
             <line number="109" hits="0"></line>
             <line number="110" hits="0"></line>
-            <line number="112" hits="0"></line>
+            <line number="111" hits="0"></line>
             <line number="113" hits="0"></line>
             <line number="114" hits="0"></line>
             <line number="115" hits="0"></line>
-            <line number="118" hits="0"></line>
+            <line number="116" hits="0"></line>
             <line number="119" hits="0"></line>
             <line number="120" hits="0"></line>
-            <line number="122" hits="0"></line>
+            <line number="121" hits="0"></line>
             <line number="123" hits="0"></line>
             <line number="124" hits="0"></line>
             <line number="125" hits="0"></line>
@@ -471,10 +474,10 @@
             <line number="128" hits="0"></line>
             <line number="129" hits="0"></line>
             <line number="130" hits="0"></line>
-            <line number="132" hits="0"></line>
+            <line number="131" hits="0"></line>
             <line number="133" hits="0"></line>
             <line number="134" hits="0"></line>
-            <line number="138" hits="0"></line>
+            <line number="135" hits="0"></line>
             <line number="139" hits="0"></line>
             <line number="140" hits="0"></line>
             <line number="141" hits="0"></line>
@@ -483,7 +486,7 @@
             <line number="144" hits="0"></line>
             <line number="145" hits="0"></line>
             <line number="146" hits="0"></line>
-            <line number="150" hits="0"></line>
+            <line number="147" hits="0"></line>
             <line number="151" hits="0"></line>
             <line number="152" hits="0"></line>
             <line number="153" hits="0"></line>
@@ -502,7 +505,7 @@
             <line number="166" hits="0"></line>
             <line number="167" hits="0"></line>
             <line number="168" hits="0"></line>
-            <line number="172" hits="0"></line>
+            <line number="169" hits="0"></line>
             <line number="173" hits="0"></line>
             <line number="174" hits="0"></line>
             <line number="175" hits="0"></line>
@@ -520,7 +523,7 @@
             <line number="187" hits="0"></line>
             <line number="188" hits="0"></line>
             <line number="189" hits="0"></line>
-            <line number="193" hits="0"></line>
+            <line number="190" hits="0"></line>
             <line number="194" hits="0"></line>
             <line number="195" hits="0"></line>
             <line number="196" hits="0"></line>
@@ -541,7 +544,7 @@
             <line number="211" hits="0"></line>
             <line number="212" hits="0"></line>
             <line number="213" hits="0"></line>
-            <line number="217" hits="0"></line>
+            <line number="214" hits="0"></line>
             <line number="218" hits="0"></line>
             <line number="219" hits="0"></line>
             <line number="220" hits="0"></line>
@@ -553,8 +556,7 @@
             <line number="226" hits="0"></line>
             <line number="227" hits="0"></line>
             <line number="228" hits="0"></line>
-            <line number="232" hits="0"></line>
-            <line number="233" hits="0"></line>
+            <line number="229" hits="0"></line>
             <line number="234" hits="0"></line>
             <line number="235" hits="0"></line>
             <line number="236" hits="0"></line>
@@ -562,8 +564,8 @@
             <line number="238" hits="0"></line>
             <line number="239" hits="0"></line>
             <line number="240" hits="0"></line>
-            <line number="244" hits="0"></line>
-            <line number="245" hits="0"></line>
+            <line number="241" hits="0"></line>
+            <line number="242" hits="0"></line>
             <line number="246" hits="0"></line>
             <line number="247" hits="0"></line>
             <line number="248" hits="0"></line>
@@ -579,8 +581,8 @@
             <line number="258" hits="0"></line>
             <line number="259" hits="0"></line>
             <line number="260" hits="0"></line>
-            <line number="265" hits="0"></line>
-            <line number="266" hits="0"></line>
+            <line number="261" hits="0"></line>
+            <line number="262" hits="0"></line>
             <line number="267" hits="0"></line>
             <line number="268" hits="0"></line>
             <line number="269" hits="0"></line>
@@ -592,9 +594,8 @@
             <line number="275" hits="0"></line>
             <line number="276" hits="0"></line>
             <line number="277" hits="0"></line>
-            <line number="282" hits="0"></line>
-            <line number="283" hits="0"></line>
-            <line number="284" hits="0"></line>
+            <line number="278" hits="0"></line>
+            <line number="279" hits="0"></line>
             <line number="285" hits="0"></line>
             <line number="286" hits="0"></line>
             <line number="287" hits="0"></line>
@@ -605,14 +606,14 @@
             <line number="292" hits="0"></line>
             <line number="293" hits="0"></line>
             <line number="294" hits="0"></line>
+            <line number="295" hits="0"></line>
+            <line number="296" hits="0"></line>
             <line number="297" hits="0"></line>
-            <line number="298" hits="0"></line>
-            <line number="299" hits="0"></line>
             <line number="300" hits="0"></line>
             <line number="301" hits="0"></line>
+            <line number="302" hits="0"></line>
             <line number="303" hits="0"></line>
             <line number="304" hits="0"></line>
-            <line number="305" hits="0"></line>
             <line number="306" hits="0"></line>
             <line number="307" hits="0"></line>
             <line number="308" hits="0"></line>
@@ -627,18 +628,18 @@
             <line number="317" hits="0"></line>
             <line number="318" hits="0"></line>
             <line number="319" hits="0"></line>
+            <line number="320" hits="0"></line>
             <line number="321" hits="0"></line>
             <line number="322" hits="0"></line>
-            <line number="323" hits="0"></line>
             <line number="324" hits="0"></line>
+            <line number="325" hits="0"></line>
+            <line number="326" hits="0"></line>
             <line number="327" hits="0"></line>
-            <line number="328" hits="0"></line>
-            <line number="329" hits="0"></line>
             <line number="330" hits="0"></line>
             <line number="331" hits="0"></line>
+            <line number="332" hits="0"></line>
             <line number="333" hits="0"></line>
             <line number="334" hits="0"></line>
-            <line number="335" hits="0"></line>
             <line number="336" hits="0"></line>
             <line number="337" hits="0"></line>
             <line number="338" hits="0"></line>
@@ -648,9 +649,9 @@
             <line number="342" hits="0"></line>
             <line number="343" hits="0"></line>
             <line number="344" hits="0"></line>
+            <line number="345" hits="0"></line>
             <line number="346" hits="0"></line>
             <line number="347" hits="0"></line>
-            <line number="348" hits="0"></line>
             <line number="349" hits="0"></line>
             <line number="350" hits="0"></line>
             <line number="351" hits="0"></line>
@@ -666,42 +667,42 @@
             <line number="361" hits="0"></line>
             <line number="362" hits="0"></line>
             <line number="363" hits="0"></line>
+            <line number="364" hits="0"></line>
+            <line number="365" hits="0"></line>
             <line number="366" hits="0"></line>
+            <line number="367" hits="0"></line>
+            <line number="368" hits="0"></line>
+            <line number="369" hits="0"></line>
             <line number="370" hits="0"></line>
-            <line number="371" hits="0"></line>
-            <line number="372" hits="0"></line>
             <line number="373" hits="0"></line>
-            <line number="374" hits="0"></line>
-            <line number="375" hits="0"></line>
-            <line number="376" hits="0"></line>
+            <line number="377" hits="0"></line>
+            <line number="378" hits="0"></line>
             <line number="379" hits="0"></line>
+            <line number="380" hits="0"></line>
+            <line number="381" hits="0"></line>
+            <line number="382" hits="0"></line>
             <line number="383" hits="0"></line>
-            <line number="384" hits="0"></line>
-            <line number="385" hits="0"></line>
             <line number="386" hits="0"></line>
-            <line number="387" hits="0"></line>
-            <line number="388" hits="0"></line>
-            <line number="389" hits="0"></line>
+            <line number="390" hits="0"></line>
+            <line number="391" hits="0"></line>
             <line number="392" hits="0"></line>
             <line number="393" hits="0"></line>
             <line number="394" hits="0"></line>
             <line number="395" hits="0"></line>
             <line number="396" hits="0"></line>
-            <line number="397" hits="0"></line>
-            <line number="398" hits="0"></line>
             <line number="399" hits="0"></line>
             <line number="400" hits="0"></line>
             <line number="401" hits="0"></line>
+            <line number="402" hits="0"></line>
+            <line number="403" hits="0"></line>
             <line number="404" hits="0"></line>
+            <line number="405" hits="0"></line>
+            <line number="406" hits="0"></line>
             <line number="407" hits="0"></line>
             <line number="408" hits="0"></line>
-            <line number="413" hits="0"></line>
+            <line number="411" hits="0"></line>
             <line number="414" hits="0"></line>
             <line number="415" hits="0"></line>
-            <line number="416" hits="0"></line>
-            <line number="417" hits="0"></line>
-            <line number="418" hits="0"></line>
-            <line number="419" hits="0"></line>
             <line number="420" hits="0"></line>
             <line number="421" hits="0"></line>
             <line number="422" hits="0"></line>
@@ -724,21 +725,28 @@
             <line number="439" hits="0"></line>
             <line number="440" hits="0"></line>
             <line number="441" hits="0"></line>
+            <line number="442" hits="0"></line>
             <line number="443" hits="0"></line>
             <line number="444" hits="0"></line>
+            <line number="445" hits="0"></line>
+            <line number="446" hits="0"></line>
             <line number="447" hits="0"></line>
             <line number="448" hits="0"></line>
-            <line number="449" hits="0"></line>
             <line number="450" hits="0"></line>
             <line number="451" hits="0"></line>
-            <line number="452" hits="0"></line>
-            <line number="453" hits="0"></line>
             <line number="454" hits="0"></line>
             <line number="455" hits="0"></line>
             <line number="456" hits="0"></line>
             <line number="457" hits="0"></line>
             <line number="458" hits="0"></line>
             <line number="459" hits="0"></line>
+            <line number="460" hits="0"></line>
+            <line number="461" hits="0"></line>
+            <line number="462" hits="0"></line>
+            <line number="463" hits="0"></line>
+            <line number="464" hits="0"></line>
+            <line number="465" hits="0"></line>
+            <line number="466" hits="0"></line>
           </lines>
         </class>
         <class name="-" filename="cmd/root.go" line-rate="0.026086956" branch-rate="0" complexity="0">
