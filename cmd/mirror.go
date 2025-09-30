@@ -99,7 +99,8 @@ func ListRemote(remote *git.Remote, listOptions *git.ListOptions, repository str
 }
 
 // GetBranchesAndTagsFromRemote returns list of branches and tags present in remoteName of repository.
-func GetBranchesAndTagsFromRemote(repository *git.Repository, remoteName string, listOptions *git.ListOptions, sourceRepository string) ([]string, []string, error) {
+func GetBranchesAndTagsFromRemote(repository *git.Repository, remoteName string, listOptions *git.ListOptions,
+	sourceRepository string) ([]string, []string, error) {
 	var branchList []string
 	var tagList []string
 	var err error
@@ -229,7 +230,8 @@ func GetDestinationAuth(destAuth Authentication) *githttp.BasicAuth {
 }
 
 // GitPlainClone clones git repository and is retried in case of error.
-func GitPlainClone(gitDirectory string, cloneOptions *git.CloneOptions, repositoryName string) (*git.Repository, error) {
+func GitPlainClone(gitDirectory string, cloneOptions *git.CloneOptions,
+	repositoryName string) (*git.Repository, error) {
 	repository, err := git.PlainClone(gitDirectory, false, cloneOptions)
 	if err == gittransport.ErrAuthenticationRequired {
 		// Terminate backoff.
@@ -279,7 +281,8 @@ func PushRefs(repository *git.Repository, auth *githttp.BasicAuth, refSpecString
 
 // MirrorRepository mirrors branches and tags from source to destination. Tags and branches
 // no longer present in source are removed from destination.
-func MirrorRepository(messages chan MirrorStatus, source, destination string, sourceAuthentication, destinationAuthentication Authentication) {
+func MirrorRepository(messages chan MirrorStatus, source, destination string,
+	sourceAuthentication, destinationAuthentication Authentication) {
 	log.Debug("Cloning ", source)
 	cloneStart := time.Now()
 	gitDirectory, err := os.MkdirTemp(localTempDirectory, "")
@@ -345,7 +348,9 @@ func MirrorRepository(messages chan MirrorStatus, source, destination string, so
 
 	destinationAuth := GetDestinationAuth(destinationAuthentication)
 
-	destinationBranchList, destinationTagList, err := GetBranchesAndTagsFromRemote(repository, "destination", &git.ListOptions{Auth: destinationAuth}, destination)
+	destinationBranchList, destinationTagList, err := GetBranchesAndTagsFromRemote(
+		repository, "destination", &git.ListOptions{Auth: destinationAuth}, destination,
+	)
 	if err != nil {
 		ProcessError(err, "getting branches and tags from ", destination, &allErrors)
 	}
@@ -359,7 +364,9 @@ func MirrorRepository(messages chan MirrorStatus, source, destination string, so
 		pushBranchesBackoff.MaxElapsedTime = 2 * time.Minute
 		err = backoff.Retry(
 			func() error {
-				return PushRefs(repository, destinationAuth, "+"+refBranchPrefix+branch+":"+refBranchPrefix+branch, destination)
+				return PushRefs(
+					repository, destinationAuth, "+"+refBranchPrefix+branch+":"+refBranchPrefix+branch, destination,
+				)
 			},
 			pushBranchesBackoff,
 		)
