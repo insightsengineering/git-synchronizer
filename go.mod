@@ -4,7 +4,7 @@ go 1.24.7
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/go-git/go-git/v5 v5.16.2
+	github.com/go-git/go-git/v5 v5.16.5
 	github.com/jamiealquiza/envy v1.1.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.10.1
