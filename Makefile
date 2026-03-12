@@ -25,7 +25,7 @@ help: ## Show this help menu
 
 devdeps: ## Install development dependencies
 	@printf "Executing target: [$@] 🎯\n"
-	@which -a golangci-lint > /dev/null || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOPATH) v2.5.0
+	@which -a golangci-lint > /dev/null || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOPATH) v2.11.3
 	@which -a typex > /dev/null || go install github.com/dtgorski/typex@latest
 	@which -a goreleaser > /dev/null || go install github.com/goreleaser/goreleaser/v2
 	@which -a gocover-cobertura > /dev/null || go install github.com/boumenot/gocover-cobertura@latest
